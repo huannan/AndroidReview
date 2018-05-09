@@ -99,4 +99,91 @@ Android中的scheme是一种页面内跳转协议，是一种非常好的实现�
 * 通过在H5页面的锚点跳转相应的页面
 * 根据服务器下发通知栏消息，App跳转相应的页面（包括另外一个APP的页面，作为推广使用）
 
+#### 8. 参考文章
+
+[Android面试（一）：Activity面试你所需知道的一切](https://www.jianshu.com/p/5b11a9eddf86)
+
+[android-Scheme与网页跳转原生的三种方式](https://blog.csdn.net/sinat_31057219/article/details/78362326)
+
+### Fragment
+
+#### 1. 什么是Fragment
+
+Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为Activity界面的一部分，Fragment的存在必须依附于Activity，并且与Activity一样，拥有自己的生命周期，同时处理用户的交互动作。同一个Activity可以有一个或多个Fragment作为界面内容，并且可以动态添加、删除Fragment，灵活控制UI内容，也可以用来解决部分屏幕适配问题。
+
+#### 2. Fragment为什么被称为第五大组件
+
+首先Fragment的使用次数是不输于其他四大组件的，而且Fragment有自己的生命周期，比Activity更加节省内存，切换模式也更加舒适，使用频率不低于四大组件。
+
+#### 3. Fragment的生命周期
+
+![image.png](https://upload-images.jianshu.io/upload_images/2570030-bb960a5fce263a3f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+![image.png](https://upload-images.jianshu.io/upload_images/2570030-9ca614fe1d9416b0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 4. Fragment创建/加载到Activity的两种方式
+
+* 静态加载
+
+    1. 创建Fragment的xml布局文件
+    2. 在Fragment的onCreateView中inflate布局，返回
+    3. 在Activity的布局文件中的适当位置添加fragment标签，指定name为Fragment的完整类名（这时候Activity中可以直接通过findViewById找到Fragment中的控件）
+
+* 动态加载（需要用到事务操作，常用）
+
+    1. 创建Fragment的xml布局文件
+    2. 在Fragment的onCreateView中inflate布局，返回
+        ```java
+        @Nullable
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+            return inflater.inflate(R.layout.activity_main, container, false);
+        }
+        ```
+    3. 在Activity中通过获取FragmentManager（SupportFragmentManager），通过beginTransaction()方法开启事务
+    4. 进行add()/remove()/replace()/attach()/detach()/hide()/addToBackStack()事务操作（这里指定的tag参数可以方便以后通过findFragmentByTag()找到这个Fragment）
+    5. 提交事务：commit()
+
+示例代码：
+
+
+
+#### 5. FragmentPageAdapter和FragmentPageStateAdapter的区别
+
+* FragmentPageAdapter在每次切换页面的时候，是将Fragment进行分离，适合页面较少的Fragment使用以保存一些内存，对系统内存不会多大影响
+
+    ```java
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        if (mCurTransaction == null) {
+            mCurTransaction = mFragmentManager.beginTransaction();
+        }
+        if (DEBUG) Log.v(TAG, "Detaching item #" + getItemId(position) + ": f=" + object
+                + " v=" + ((Fragment)object).getView());
+        //FragmentPageAdapter在destroyItem的时候调用detach
+        mCurTransaction.detach((Fragment)object);
+    }
+    ```
+
+* FragmentPageStateAdapter在每次切换页面的时候，是将Fragment进行回收，适合页面较多的Fragment使用，这样就不会消耗更多的内存
+
+    ```java
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        Fragment fragment = (Fragment) object;
+        if (mCurTransaction == null) {
+            mCurTransaction = mFragmentManager.beginTransaction();
+        }
+        if (DEBUG) Log.v(TAG, "Removing item #" + position + ": f=" + object
+                + " v=" + ((Fragment)object).getView());
+        while (mSavedState.size() <= position) {
+            mSavedState.add(null);
+        }
+        mSavedState.set(position, fragment.isAdded()
+                ? mFragmentManager.saveFragmentInstanceState(fragment) : null);
+        mFragments.set(position, null);
+        //FragmentPageStateAdapter在destroyItem的时候调用remove
+        mCurTransaction.remove(fragment);
+    }
+    ```
 
