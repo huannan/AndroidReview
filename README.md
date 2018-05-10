@@ -133,6 +133,7 @@ Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为A
 
     1. 创建Fragment的xml布局文件
     2. 在Fragment的onCreateView中inflate布局，返回
+
         ```java
         @Nullable
         @Override
@@ -140,15 +141,102 @@ Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为A
             return inflater.inflate(R.layout.activity_main, container, false);
         }
         ```
+
     3. 在Activity中通过获取FragmentManager（SupportFragmentManager），通过beginTransaction()方法开启事务
-    4. 进行add()/remove()/replace()/attach()/detach()/hide()/addToBackStack()事务操作（这里指定的tag参数可以方便以后通过findFragmentByTag()找到这个Fragment）
+    4. 进行add()/remove()/replace()/attach()/detach()/hide()/addToBackStack()事务操作（都是对Fragment的栈进行操作，其中add()指定的tag参数可以方便以后通过findFragmentByTag()找到这个Fragment）
     5. 提交事务：commit()
 
-示例代码：
+        示例代码：
+        ```java
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_main);
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.fragment_container, new TestFragment(), "test")
+                    .commit();
+            TestFragment f = (TestFragment) getSupportFragmentManager().findFragmentByTag("test");
+        }
+        ```
 
+#### 5. Fragment通信问题
 
+1. 通过findFragmentByTag或者getActivity获得对方的引用（强转）之后，再相互调用对方的public方法。
 
-#### 5. FragmentPageAdapter和FragmentPageStateAdapter的区别
+    优点：简单粗暴
+    缺点：引入了“强转”的丑陋代码，另外两个类之间各自持有对方的强引用，耦合较大，容易造成内存泄漏
+
+2. 通过Bundle的方法进行传值，在添加Fragment的时候进行通信
+
+    ```java
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Fragment fragment = new TestFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString("key", "value");
+        //Activity中对fragment设置一些参数
+        fragment.setArguments(bundle);
+        getSupportFragmentManager().beginTransaction()
+                .add(R.id.fragment_container, fragment, "test")
+                .commit();
+    }
+    ```
+
+    优点：简单粗暴
+    缺点：只能在Fragment添加到Activity的时候才能使用，属于单向通信
+
+3. 利用eventbus进行通信
+
+    优点：实时性高，双向通信，Activity与Fragment之间可以完全解耦
+    缺点：反射影响性能，无法获取返回数据，EventBUS难以维护
+
+4. 利用接口回调进行通信（Google官方推荐）
+
+    ```java
+    //MainActivity实现MainFragment开放的接口
+    public class MainActivity extends FragmentActivity implements FragmentListener {
+        @override
+        public void toH5Page() {
+            //...其他处理代码省略
+        }
+    }
+    //Fragment的实现
+    public class MainFragment extends Fragment {
+        //接口的实例，在onAttach Activity的时候进行设置
+        public FragmentListener mListener;
+        //MainFragment开放的接口
+        public static interface FragmentListener {
+            //跳到h5页面
+            void toH5Page();
+        }
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            //对传递进来的Activity进行接口转换
+            if (activity instance FragmentListener){
+                mListener = ((FragmentListener) activity);
+            }
+        }
+         ...其他处理代码省略
+    }
+    ```
+
+    优点：既能达到复用，又能达到很好的可维护性，并且性能得到保证
+    缺点：假如项目很大了，Activity与Fragment的数量也会增加，这时候为每对Activity与Fragment交互定义交互接口就是一个很麻烦的问题（包括为接口的命名，新定义的接口相应的Activity还得实现，相应的Fragment还得进行强制转换）
+
+5. 通过Handler进行通信（其实就是把接口的方式改为Handler）
+
+    优点：既能达到复用，又能达到很好的可维护性，并且性能得到保证
+    缺点：Fragment对具体的Activity存在耦合，不利于Fragment复用和维护，没法获取Activity的返回数据
+
+6. 通过广播/本地广播进行通信
+
+    优点：简单粗暴
+    缺点：大材小用，存在性能损耗，传播数据必须实现序列化接口
+
+#### 6. FragmentPageAdapter和FragmentPageStateAdapter的区别
 
 * FragmentPageAdapter在每次切换页面的时候，是将Fragment进行分离，适合页面较少的Fragment使用以保存一些内存，对系统内存不会多大影响
 
