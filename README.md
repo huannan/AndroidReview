@@ -236,6 +236,8 @@ Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为A
     优点：简单粗暴
     缺点：大材小用，存在性能损耗，传播数据必须实现序列化接口
 
+7. 父子Fragment之间通信，可以使用getParentFragment()/getChildFragmentManager()的方式进行
+
 #### 6. FragmentPageAdapter和FragmentPageStateAdapter的区别
 
 * FragmentPageAdapter在每次切换页面的时候，是将Fragment进行分离，适合页面较少的Fragment使用以保存一些内存，对系统内存不会多大影响
@@ -274,4 +276,38 @@ Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为A
         mCurTransaction.remove(fragment);
     }
     ```
+
+[Android：Activity与Fragment通信(99%)完美解决方案](https://www.jianshu.com/p/1b824e26105b)
+
+### Service
+
+#### 1. 什么是Service
+
+Service是四大组件之一，它可以在后台执行长时间运行操作而没有用户界面的应用组件
+
+#### 2. Service的两种启动方式与生命周期
+
+![image.png](https://upload-images.jianshu.io/upload_images/2570030-9cc42d42d66337e4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+startService特点：
+
+1. 使用这种start方式启动的Service的生命周期如下：onCreate()--->onStartCommand()（onStart()方法已过时） ---> onDestroy()
+2. 如果服务已经开启，不会重复的执行onCreate()， 而是会调用onStart()和onStartCommand()
+3. 一旦服务开启跟调用者(开启者)就没有任何关系了。
+4. 开启者退出了，开启者挂了，服务还在后台长期的运行。
+5. 开启者不能调用服务里面的方法。
+
+bindService特点：
+
+1. 使用这种start方式启动的Service的生命周期如下：onCreate() --->onBind()--->onUnbind()--->onDestroy()
+2. 绑定服务不会调用onStart()或者onStartCommand()方法
+3. bind的方式开启服务，绑定服务。调用者调用unbindService解除绑定，服务也会跟着销毁。
+4. 绑定者可以调用服务里面的方法。
+
+#### 3. Service和Thread的区别
+        
+* Service是安卓中系统的组件，它运行在独立进程的主线程中，默认情况下不可以执行耗时操作（否则ANR）
+* Thread是程序执行的最小单元，分配CPU的基本单位，可以开启子线程执行耗时操作
+* Service在不同Activity中可以获取自身实例，可以方便的对Service进行操作
+* Thread的运行是独立于Activity的，也就是说当一个Activity被finish之后，如果没有主动停止Thread或者Thread里的run方法没有执行完毕的话，Thread也会一直执行，引发内存泄漏；另一方面，没有办法在不同的Activity中对同一Thread进行控制。  
 
