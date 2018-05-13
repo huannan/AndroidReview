@@ -277,6 +277,8 @@ Fragment，俗称碎片，自Android 3.0开始被引进并大量使用。作为A
     }
     ```
 
+#### 7. 参考文章
+
 [Android：Activity与Fragment通信(99%)完美解决方案](https://www.jianshu.com/p/1b824e26105b)
 
 ### Service
@@ -311,3 +313,97 @@ bindService特点：
 * Service在不同Activity中可以获取自身实例，可以方便的对Service进行操作
 * Thread的运行是独立于Activity的，也就是说当一个Activity被finish之后，如果没有主动停止Thread或者Thread里的run方法没有执行完毕的话，Thread也会一直执行，引发内存泄漏；另一方面，没有办法在不同的Activity中对同一Thread进行控制。  
 
+### Broadcast
+
+#### 1. BroadcastReceiver是什么
+
+BroadcastReceiver是四大组件之一，是一种广泛运用在应用程序之间传输信息的机制，通过发送Intent来传送我们的数据。
+
+#### 2. BroadcastReceiver的使用场景
+        
+* 不同组件之间的消息通信（应用内/应用内不同进程/不同进程（应用））
+* 与Android系统在特定情况下的通信（如电话呼入、蓝牙状态变化等）
+* 线程之间的通信
+
+#### 3. Broadcast种类
+
+1. 普通广播（Normal Broadcast）
+    
+    * 通过sendBroadcast进行发送，如果注册了Action匹配的接受者则会收到
+    * 若发送广播有相应权限，那么广播接收者也需要相应权限
+    
+2. 系统广播（System Broadcast）
+
+    * Android中内置了多个系统广播：只要涉及到手机的基本操作（如开机、网络状态变化、拍照等等），都会发出相应的广播
+    * 每个广播都有特定的Intent - Filter（包括具体的action）
+    * 系统广播由系统发送，不需要手动发送，只需要注册监听
+
+3. 有序广播（Ordered Broadcast）
+
+    * 通过sendOrderedBroadcast发送
+    * 发送出去的广播被广播接收者按照先后顺序接收（有序是针对广播接收者而言的）
+    * 广播接受者接收广播的顺序规则：Priority大的优先；动态注册的接收者优先
+    * 先接收的可以对广播进行截断和修改
+
+4. App应用内广播（本地广播、Local Broadcast）
+
+    * 通过LocalBroadcastManager.getInstance(this).sendBroadcastSync();
+    * App应用内广播可理解为一种局部广播，广播的发送者和接收者都同属于一个App
+    * 相比于全局广播（普通广播），App应用内广播优势体现在：安全性高 & 效率高（本地广播只会在APP内传播，安全性高；不允许其他APP对自己的APP发送广播，效率高）
+
+5. 粘性广播（Sticky Broadcast）
+
+    * 在Android5.0 & API 21中已经失效，所以不建议使用
+    * 通过sendStickyBroadcast发送
+    * 粘性广播在发送后就一直存在于系统的消息容器里面，等待对应的处理器去处理，如果暂时没有处理器处理这个广播则一直在消息容器里面处于等待状态
+    * 粘性广播的Receiver如果被销毁，那么下次重新创建的时候会自动接收到消息数据
+    
+#### 4. 广播的注册方式
+
+* 静态注册：也称为清单注册，就是在AndroidManifest.xml中注册的广播。此类广播接收器在应用尚未启动的时候就可以接收到相应广播。
+* 动态注册：也称为运行时注册，也就是在Service或者Activity组件中，通过Context.registerReceiver()注册广播接收器。此类广播接收器是在应用已启动后，通过代码进行注册。生命周期与组件一致。
+
+#### 5. 广播的实现机制
+
+![image.png](https://upload-images.jianshu.io/upload_images/2570030-6b1cca250e64e07a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 6. 本地广播的使用以及实现机制
+
+* 基本使用：可以通过intent.setPackage(packageName)指定包名，也可以使用localBroadcastManager（常用），示例代码如下：
+
+    ```java
+    //注册应用内广播接收器
+    //步骤1：实例化BroadcastReceiver子类 & IntentFilter mBroadcastReceiver 
+    mBroadcastReceiver = new mBroadcastReceiver();
+    IntentFilter intentFilter = new IntentFilter();
+    
+    //步骤2：实例化LocalBroadcastManager的实例
+    localBroadcastManager = LocalBroadcastManager.getInstance(this);
+    
+    //步骤3：设置接收广播的类型 
+    intentFilter.addAction(android.net.conn.CONNECTIVITY_CHANGE);
+    
+    //步骤4：调用LocalBroadcastManager单一实例的registerReceiver（）方法进行动态注册 
+    localBroadcastManager.registerReceiver(mBroadcastReceiver, intentFilter);
+    
+    //取消注册应用内广播接收器
+    localBroadcastManager.unregisterReceiver(mBroadcastReceiver);
+    
+    //发送应用内广播
+    Intent intent = new Intent();
+    intent.setAction(BROADCAST_ACTION);
+    localBroadcastManager.sendBroadcast(intent);
+    ```
+
+* localBroadcastManager的实现机制
+
+    1. LocalBroadcastManager高效的原因主要是因为它内部是通过Handler实现的，它的sendBroadcast()方法含义和我们平时所用的全局广播不一样，它的sendBroadcast()方法其实是通过handler发送一个Message实现的。
+    2. 既然是它内部是通过Handler来实现广播的发送的，那么相比与系统广播通过Binder实现那肯定是更高效了，同时使用Handler来实现，别的应用无法向我们的应用发送该广播，而我们应用内发送的广播也不会离开我们的应用
+    3. LocalBroadcastManager内部协作主要是靠这两个Map集合：mReceivers和mActions，当然还有一个List集合mPendingBroadcasts，这个主要就是存储待接收的广播对象
+
+#### 7. 参考文章
+
+[Android四大组件：BroadcastReceiver史上最全面解析](https://www.jianshu.com/p/ca3d87a4cdf3)
+[Android 粘性广播StickyBroadcast的使用](http://www.codeweblog.com/android-%E7%B2%98%E6%80%A7%E5%B9%BF%E6%92%ADstickybroadcast%E7%9A%84%E4%BD%BF%E7%94%A8/)
+[咦，Oreo怎么收不到广播了？](https://blog.csdn.net/dfghhvbafbga/article/details/80223938)
+[LocalBroadcastManager—创建更高效、更安全的广播](https://blog.csdn.net/u010687392/article/details/49744579)
