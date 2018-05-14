@@ -404,8 +404,11 @@ BroadcastReceiver是四大组件之一，是一种广泛运用在应用程序之
 #### 7. 参考文章
 
 [Android四大组件：BroadcastReceiver史上最全面解析](https://www.jianshu.com/p/ca3d87a4cdf3)
+
 [Android 粘性广播StickyBroadcast的使用](http://www.codeweblog.com/android-%E7%B2%98%E6%80%A7%E5%B9%BF%E6%92%ADstickybroadcast%E7%9A%84%E4%BD%BF%E7%94%A8/)
+
 [咦，Oreo怎么收不到广播了？](https://blog.csdn.net/dfghhvbafbga/article/details/80223938)
+
 [LocalBroadcastManager—创建更高效、更安全的广播](https://blog.csdn.net/u010687392/article/details/49744579)
 
 
@@ -480,10 +483,10 @@ mWebView.loadUrl("file:///android_asset/www/index.html");
 4. 移除Android系统内部的默认内置接口
 
     ```java
-    removeJavascriptInterface("searchBoxJavaBridge_") 
-    removeJavascriptInterface("accessibility")；
-    removeJavascriptInterface("accessibilityTraversal")；
-        ```
+    removeJavascriptInterface("searchBoxJavaBridge_");
+    removeJavascriptInterface("accessibility");
+    removeJavascriptInterface("accessibilityTraversal");
+    ```
              
 #### 2. JSBridge
 
@@ -533,8 +536,45 @@ WebViewClient.onPageFinished在每次页面加载完成的时候调用，但是�
 #### 7. 参考文章
 
 [WebView 远程代码执行漏洞浅析](https://blog.csdn.net/feizhixuan46789/article/details/49155369)
+
 [Android WebView远程执行代码漏洞浅析](https://blog.csdn.net/fengling59/article/details/50379522)
+
 [Android WebView 远程代码执行漏洞简析](http://www.droidsec.cn/android-webview-%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E4%B8%8E%E6%A3%80%E6%B5%8B/)
+
 [在WebView中如何让JS与Java安全地互相调用](https://blog.csdn.net/xyz_lmn/article/details/39399225)
 
+### Android系统架构与Framework源码分析
 
+#### Android系统架构
+
+![ape_fwk_all.png](http://upload-images.jianshu.io/upload_images/2570030-b9a18bc4b26c498e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+根据上图，Android系统架构从上往下分别是：
+
+1. 应用框架：应用框架最常被应用开发者使用。作为硬件开发者，我们应该非常了解开发者 API，因为很多此类 API 都可直接映射到底层 HAL 接口，并可提供与实现驱动程序相关的实用信息。
+2. Binder IPC：Binder 进程间通信 (IPC) 机制允许应用框架跨越进程边界并调用 Android 系统服务代码，从而使得高级框架 API 能与 Android 系统服务进行交互。在应用框架级别，开发者无法看到此类通信的过程，但一切似乎都在“按部就班地运行”。
+3. 系统服务：应用框架 API 所提供的功能可与系统服务通信，以访问底层硬件。服务是集中的模块化组件，例如窗口管理器、搜索服务或通知管理器。Android 包含两组服务：“系统”（诸如窗口管理器和通知管理器之类的服务）和“媒体”（与播放和录制媒体相关的服务）。
+4. 硬件抽象层 (HAL)：硬件抽象层 (HAL) 会定义一个标准接口以供硬件供应商实现，并允许 Android 忽略较低级别的驱动程序实现。借助 HAL，我们可以顺利实现相关功能，而不会影响或无需更改更高级别的系统。HAL 实现会被封装成模块 (.so) 文件，并会由 Android 系统适时地加载。
+5. Linux 内核：开发设备驱动程序与开发典型的 Linux 设备驱动程序类似。Android 使用的 Linux 内核版本包含一些特殊的补充功能，例如：唤醒锁（这是一种内存管理系统，可更主动地保护内存）、Binder IPC 驱动程序以及对移动嵌入式平台非常重要的其他功能。这些补充功能主要用于增强系统功能，不会影响驱动程序开发。我们可以使用任一版本的内核，只要它支持所需功能（如 Binder 驱动程序）。不过，建议使用 Android 内核的最新版本。
+
+#### Android Framework源码分析
+
+[写给Android App开发人员看的Android底层知识（1）- Binder与AIDL](http://www.cnblogs.com/Jax/p/6864103.html)
+
+[写给Android App开发人员看的Android底层知识（2）- AMS与APP、Activity的启动流程](http://www.cnblogs.com/Jax/p/6880604.html)
+
+[写给Android App开发人员看的Android底层知识（3）- AMS与APP、Activity的启动流程](http://www.cnblogs.com/Jax/p/6880631.html)
+
+[写给Android App开发人员看的Android底层知识（4）- Context](http://www.cnblogs.com/Jax/p/6880647.html)
+
+[写给Android App开发人员看的Android底层知识（5）- Service](http://www.cnblogs.com/Jax/p/6883549.html)
+
+[写给Android App开发人员看的Android底层知识（6）- BroadcastReceiver](http://www.cnblogs.com/Jax/p/6883534.html)
+
+[写给Android App开发人员看的Android底层知识（7）- ContentProvider](http://www.cnblogs.com/Jax/p/6910699.html)
+
+[写给Android App开发人员看的Android底层知识（8）- PMS及App安装过程](http://www.cnblogs.com/Jax/p/6910745.html)
+
+除此之外，还有消息机制、窗口等源码分析，推荐《开发艺术探索》，以及LooperJing的文集：
+
+[Android源码解析](https://www.jianshu.com/nb/8017467)
