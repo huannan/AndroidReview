@@ -545,7 +545,7 @@ WebViewClient.onPageFinished在每次页面加载完成的时候调用，但是�
 
 ### Android系统架构与Framework源码分析
 
-#### Android系统架构
+#### 1. Android系统架构
 
 ![ape_fwk_all.png](http://upload-images.jianshu.io/upload_images/2570030-b9a18bc4b26c498e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
@@ -557,7 +557,7 @@ WebViewClient.onPageFinished在每次页面加载完成的时候调用，但是�
 4. 硬件抽象层 (HAL)：硬件抽象层 (HAL) 会定义一个标准接口以供硬件供应商实现，并允许 Android 忽略较低级别的驱动程序实现。借助 HAL，我们可以顺利实现相关功能，而不会影响或无需更改更高级别的系统。HAL 实现会被封装成模块 (.so) 文件，并会由 Android 系统适时地加载。
 5. Linux 内核：开发设备驱动程序与开发典型的 Linux 设备驱动程序类似。Android 使用的 Linux 内核版本包含一些特殊的补充功能，例如：唤醒锁（这是一种内存管理系统，可更主动地保护内存）、Binder IPC 驱动程序以及对移动嵌入式平台非常重要的其他功能。这些补充功能主要用于增强系统功能，不会影响驱动程序开发。我们可以使用任一版本的内核，只要它支持所需功能（如 Binder 驱动程序）。不过，建议使用 Android 内核的最新版本。
 
-#### Android Framework源码分析
+#### 2. Android Framework源码分析
 
 [写给Android App开发人员看的Android底层知识（1）- Binder与AIDL](http://www.cnblogs.com/Jax/p/6864103.html)
 
@@ -575,6 +575,57 @@ WebViewClient.onPageFinished在每次页面加载完成的时候调用，但是�
 
 [写给Android App开发人员看的Android底层知识（8）- PMS及App安装过程](http://www.cnblogs.com/Jax/p/6910745.html)
 
-除此之外，还有消息机制、窗口等源码分析，推荐《开发艺术探索》，以及LooperJing的文集：
+除此之外，还有消息机制、窗口管理等源码分析，推荐《开发艺术探索》，以及LooperJing的文集：
 
 [Android源码解析](https://www.jianshu.com/nb/8017467)
+
+* 备注：源码分析部分先放一放，后续补充一些简要概括性的
+
+### 消息机制与Handler
+
+#### 1. 基本概念
+
+Android的消息机制主要包括Handler、MessageQueue和Looper。
+
+Handler是Android中引入的一种让开发者参与处理线程中消息循环的机制。每个Handler都关联了一个线程，每个线程内部都维护了一个消息队列MessageQueue，这样Handler实际上也就关联了一个消息队列。可以通过Handler将Message和Runnable对象发送到该Handler所关联线程的MessageQueue（消息队列）中，然后该消息队列一直在循环拿出一个Message，对其进行处理，处理完之后拿出下一个Message，继续进行处理，周而复始。
+
+#### 2. 为什么要有消息机制
+
+Android的UI控件不是线程安全的，如果在多线程中访问UI控件则会导致不可预期的状态。那为什么不对UI控件访问加锁呢？
+
+访问加锁缺点有两个：
+
+1. 首先加锁会让UI控件的访问的逻辑变的复杂；
+2. 其次，锁机制会降低UI的访问效率。
+
+那我们不用线程来操作不就行了吗？但这是不可能的，因为Android的主线程不能执行耗时操作，否则会出现ANR。
+
+所以，从各方面来说，Android消息机制是为了解决在子线程中无法访问UI的矛盾。
+
+#### 3. Handler的工作原理
+
+![Android消息机制.png](http://upload-images.jianshu.io/upload_images/2570030-2d4acc6406c28035.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+如图所示，在主线程ActivityThread中的main方法入口中，先是创建了系统的Handler（H），创建主线程的Looper，将Looper与主线程绑定，调用了Looper的loop方法之后开启整个应用程序的主循环。Looper里面有一个消息队列，通过Handler发送消息到消息队列里面，然后通过Looper不断去循环取出消息，交给Handler去处理。通过系统的Handler，或者说Android的消息处理机制就确保了整个Android系统有条不紊地运作，这是Android系统里面的一个比较重要的机制。
+
+我们的APP也可以创建自己的Handler，可以是在主线程里面创建，也可以在子线程里面创建，但是需要手动创建子线程的Looper并且手动启动消息循环。
+
+#### 4. Handler的内存泄漏问题
+
+##### 原因
+
+非静态内部类持有外部类的匿名引用，导致Activity无法释放（生命周期不一致）
+
+##### 解决方案
+
+* Handler内部持有外部Activity的弱引用
+* Handler改为静态内部类
+* 在适当时机移除Handler的所有Callback()
+
+#### 5. 参考文章
+
+[Android 源码分析之旅3.1--消息机制源码分析](https://www.jianshu.com/p/ac50ba6ba3a2)
+
+[android消息机制原理详解](https://blog.csdn.net/ouyangfan54/article/details/55006558)
+
+[Android中Handler的使用](https://blog.csdn.net/iispring/article/details/47115879)
