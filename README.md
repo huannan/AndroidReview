@@ -629,3 +629,68 @@ Android的UI控件不是线程安全的，如果在多线程中访问UI控件则
 [android消息机制原理详解](https://blog.csdn.net/ouyangfan54/article/details/55006558)
 
 [Android中Handler的使用](https://blog.csdn.net/iispring/article/details/47115879)
+
+### AsyncTask
+
+#### 1. AsyncTask的基本概念与基本工作原理
+
+它本质上就是一个封装了线程池和Handler的异步框架。
+
+AsyncTask执行任务时，内部会创建一个进程作用域的线程池来管理要运行的任务，也就是说当你调用了AsyncTask.execute()后，AsyncTask会把任务交给线程池，由线程池来管理创建Thread和运行Thread。
+
+#### 2. AsyncTask使用方法
+
+##### 三个参数
+
+* Params：表示后台任务执行时的参数类型，该参数会传给AysncTask的doInBackground()方法
+* Progress：表示后台任务的执行进度的参数类型，该参数会作为onProgressUpdate()方法的参数
+* Result：表示后台任务的返回结果的参数类型，该参数会作为onPostExecute()方法的参数
+        
+##### 五个方法
+
+* onPreExecute()：异步任务开启之前回调，在主线程中执行
+* doInBackground()：执行异步任务，在线程池中执行
+* onProgressUpdate()：当doInBackground中调用publishProgress时回调，在主线程中执行
+* onPostExecute()：在异步任务执行之后回调，在主线程中执行
+* onCancelled()：在异步任务被取消时回调
+
+#### 3. AsyncTask的版本差异
+
+##### 内部的线程池的版本差异
+
+1. 3.0之前规定同一时刻能够运行的线程数为5个，线程池总大小为128。也就是说当我们启动了10个任务时，只有5个任务能够立刻执行，另外的5个任务则需要等待，当有一个任务执行完毕后，第6个任务才会启动，以此类推。而线程池中最大能存放的线程数是128个，当我们尝试去添加第129个任务时，程序就会崩溃。
+2. 因此在3.0版本中AsyncTask的改动还是挺大的，在3.0之前的AsyncTask可以同时有5个任务在执行，而3.0之后的AsyncTask同时只能有1个任务在执行。为什么升级之后可以同时执行的任务数反而变少了呢？这是因为更新后的AsyncTask已变得更加灵活，如果不想使用默认的线程池，还可以自由地进行配置。
+
+##### 串行、并行的版本差异
+
+1. AsyncTask在Android 2.3之前默认采用并行执行任务，AsyncTask在Android 2.3之后默认采用串行执行任务
+2. 如果需要在Android 2.3之后采用并行执行任务，可以调用AsyncTask的executeOnExecutor()
+
+#### 4. AsyncTask的缺陷
+
+##### 内存泄漏问题
+
+###### 原因
+
+非静态内部类持有外部类的匿名引用，导致Activity无法释放（生命周期不一致，与Handler一样）
+       
+###### 解决方案
+
+* AsyncTask内部持有外部Activity的弱引用
+* AsyncTask改为静态内部类
+* 在Activity销毁之前，调用AsyncTask.cancel()取消AsyncTask的运行，以此来保证程序的稳定
+
+##### 结果丢失问题
+
+###### 原因
+
+在屏幕旋转、Activity在内存紧张时被回收等造成Activity重新创建时AsyncTask数据丢失的问题。当Activity销毁并重新创建后，还在运行的AsyncTask会持有一个Activity的非法引用即之前的Activity实例。导致onPostExecute()没有任何作用（一般是对UI更新无效）。
+
+###### 解决方案
+
+1. 在Activity重建之前cancel异步任务
+2. 在重建之后重新执行异步任务
+
+#### 5. 参考文章
+
+[AsyncTask 使用和缺陷](https://blog.csdn.net/boyupeng/article/details/49001215)
