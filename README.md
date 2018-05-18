@@ -895,3 +895,59 @@ ProGuard过程中将无用的字段或方法存入到EntryPoint中，将非Entry
 #### 3. 参考文章
         
 [Android Jenkins+Git+Gradle持续集成-实在太详细](https://www.jianshu.com/p/38b2e17ced73)
+
+### ANR
+
+#### 1. ANR是什么
+
+Android中，主线程（UI线程）如果在规定时内没有处理完相应工作，就会出现ANR(Application Not Responding)，弹出页面无响应的对话框。
+
+#### 2. ANR分类
+
+1. Activity的输入事件（按键和触摸事件）5s内没被处理: Input event dispatching timed out
+2. BroadcastReceiver的事件(onReceive方法)在规定时间内没处理完(前台广播为10s，后台广播为60s): Timeout of broadcast BroadcastRecord
+3. Service在规定时间内（前台20s/后台200s）未响应: Timeout executing service
+4. ContentProvider的publish在10s内没进行完: Timeout publishing content providers
+
+#### 3. ANR的核心原因
+
+* 主线程在做一些耗时的工作
+* 主线程被其他线程锁
+* cpu被其他进程占用，该进程没被分配到足够的cpu资源。
+
+#### 4. ANR的原理
+
+1. 在进行相关操作调用Handler.sendMessageAtTime()发送一个ANR的消息，延时时间为ANR发生的时间(如前台Service是当前时间20s之后)。
+2. 进行相关的操作
+3. 操作结束后向remove掉该条Message。
+4. 如果相关的操作在规定时间没有执行完成，该条Message将被Handler取出并执行，就发生了ANR，并且由系统弹出ANR的弹窗。
+
+#### 5. ANR的分析方法（主要是分析是否有死锁、通过调用栈定位耗时操作、系统资源情况）
+
+1. 从/data/anr/traces.txt中找到ANR反生的信息：可以从log中搜索“ANR in”或“am_anr”，会找到ANR发生的log，该行会包含了ANR的时间、进程、是何种ANR等信息，如果是BroadcastReceiver的ANR可以怀疑BroadCastReceiver.onReceive()的问题，如果的Service或Provider就怀疑是否其onCreate()的问题。
+2. 在该条log之后会有CPU usage的信息，表明了CPU在ANR前后的用量（log会表明截取ANR的时间），从各种CPU Usage信息中大概可以分析如下几点：
+
+    * 如果某些进程的CPU占用百分比较高，几乎占用了所有CPU资源，而发生ANR的进程CPU占用为0%或非常低，则认为CPU资源被占用，进程没有被分配足够的资源，从而发生了ANR。这种情况多数可以认为是系统状态的问题，并不是由本应用造成的。
+    * 如果发生ANR的进程CPU占用较高，如到了80%或90%以上，则可以怀疑应用内一些代码不合理消耗掉了CPU资源，如出现了死循环或者后台有许多线程执行任务等等原因，这就要结合trace和ANR前后的log进一步分析了。
+    * 如果CPU总用量不高，该进程和其他进程的占用过高，这有一定概率是由于某些主线程的操作就是耗时过长，或者是由于主进程被锁造成的。
+   
+3. 除了上述的情况1以外，分析CPU usage之后，确定问题需要我们进一步分析trace文件。trace文件记录了发生ANR前后该进程的各个线程的stack。对我们分析ANR问题最有价值的就是其中主线程的stack，一般主线程的trace可能有如下几种情况：
+
+    * 主线程是running或者native而对应的栈对应了我们应用中的函数，则很有可能就是执行该函数时候发生了超时。
+    * 主线程被block:非常明显的线程被锁，这时候可以看是被哪个线程锁了，可以考虑优化代码。如果是死锁问题，就更需要及时解决了。
+    * 由于抓trace的时刻很有可能耗时操作已经执行完了（ANR -> 耗时操作执行完毕 ->系统抓trace）。
+   
+#### 6. 如何避免ANR的方法（常见场景）
+
+1. 主线程避免执行耗时操作（文件操作、IO操作、数据库操作、网络访问等）：
+
+    Activity、Service（默认情况下）的所有生命周期回调
+    BoardcastReceiver的onReceive()回调方法
+    AsyncTask的回调除了doInBackground，其他都是在主线程中
+    没有使用子线程Looper的Handler的handlerMessage，post(Runnable)都是执行在主线程中
+
+2. 尽量避免主线程的被锁的情况，在一些同步的操作主线程有可能被锁，需要等待其他线程释放相应锁才能继续执行，这样会有一定的死锁、从而ANR的风险。对于这种情况有时也可以用异步线程来执行相应的逻辑。
+
+#### 7. 参考文章
+
+[Android ANR问题总结](https://www.jianshu.com/p/fa962a5fd939)
