@@ -694,3 +694,85 @@ AsyncTask执行任务时，内部会创建一个进程作用域的线程池来�
 #### 5. 参考文章
 
 [AsyncTask 使用和缺陷](https://blog.csdn.net/boyupeng/article/details/49001215)
+
+### HandlerThread
+
+#### 1. HandlerThread产生背景
+
+重点（防止线程多次创建、销毁）：当系统有多个耗时任务需要执行时，每个任务都会开启一个新线程去执行耗时任务，这样会导致系统多次创建和销毁线程，从而影响性能。为了解决这一问题，Google提供了HandlerThread，HandlerThread是在线程中创建一个Looper循环器，让Looper轮询消息队列，当有耗时任务进入队列时，则不需要开启新线程，在原有的线程中执行耗时任务即可，否则线程阻塞。
+
+HandlerThread集Thread和Handler之所长，适用于会长时间在后台运行，并且间隔时间内（或适当情况下）会调用的情况，比如上面所说的实时更新。
+
+#### 2. HandlerThread的特点
+
+* HandlerThread本质上是一个线程，继承自Thread，与线程池不同，HandlerThread是一个串行队列，背后只有一个线程
+* HandlerThread有自己的Looper对象，可以进行Looper循环，可以创建Handler
+
+    ```java
+    public class HandlerThread extends Thread {
+        Looper mLooper;
+        private @Nullable Handler mHandler;
+    }
+    ```
+    
+* HandlerThread可以在Handler的handleMessage中执行异步方法，异步不会堵塞，减少对性能的消耗
+* HandlerThread缺点是不能同时继续进行多任务处理，需要等待进行处理，处理效率较低
+
+### IntentService
+
+#### 1. IntentService是什么
+
+* 重点（本质上也是为了节省资源）
+* IntentService是继承自Service并处理异步请求的一个类，其内部采用HandlerThread和Handler实现的，在IntentService内有一个工作线程来处理耗时操作，其优先级比普通Service高
+* 当任务完成后，IntentService会自动停止，而不需要手动调用stopSelf()
+* 可以多次启动IntentService，每个耗时操作都会以工作队列的方式在IntentService中onHandlerIntent()回调方法中执行，并且每次只会执行一个工作线程
+
+#### 2. IntentService使用方法
+    
+1. 创建Service继承自IntentService
+2. 覆写构造方法和onHandlerIntent()方法
+3. 在onHandlerIntent()中执行耗时操作
+
+#### 3. IntentService工作原理
+
+* IntentService继承自Service，内部有一个HandlerThread对象
+* 在onCreate的时候会创建一个HandlerThread对象，并启动线程
+* 紧接着创建ServiceHandler对象，ServiceHandler继承自Handler，用来处理消息。ServiceHandler将获取HandlerThread的Looper就可以开始正常工作了
+
+    ```java
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            HandlerThread thread = new HandlerThread("IntentService[" + mName + "]");
+            thread.start();
+            mServiceLooper = thread.getLooper();
+            mServiceHandler = new ServiceHandler(mServiceLooper);
+        }
+    ```
+
+* 每启动一次onStart方法，就会把数消息和数据发给mServiceHandler，相当于发送了一次Message消息给HandlerThread的消息队列。
+
+    ```java
+        @Override
+        public void onStart(@Nullable Intent intent, int startId) {
+            Message msg = mServiceHandler.obtainMessage();
+            msg.arg1 = startId;
+            msg.obj = intent;
+            mServiceHandler.sendMessage(msg);
+        }
+    ```
+
+* mServiceHandler会把数据传给onHandleIntent方法，onHandleIntent是个抽象方法，需要在IntentService实现，所以每次onStart方法之后都会调用我们自己写的onHandleIntent方法去处理。处理完毕使用stopSelf通知HandlerThread已经处理完毕，HandlerThread继续观察消息队列，如果还有未执行玩的message则继续执行，否则结束。
+
+    ```java
+        private final class ServiceHandler extends Handler {
+            public ServiceHandler(Looper looper) {
+                super(looper);
+            }
+            @Override
+            public void handleMessage(Message msg) {
+                onHandleIntent((Intent)msg.obj);
+                stopSelf(msg.arg1);
+            }
+        }
+    ```
