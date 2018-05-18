@@ -876,3 +876,22 @@ ProGuard过程中将无用的字段或方法存入到EntryPoint中，将非Entry
 #### 4. 参考文章
 
 [写给Android开发者的混淆使用手册](https://www.jianshu.com/p/158aa484da13)
+
+### 持续集成
+
+#### 1. 持续集成的基本概念
+
+* 持续集成（Continuous Integration），持续集成是一种软件开发实践，通过自动化的构建（包括编译、发布和自动化测试）来验证，从而帮助尽快发现集成错误。
+* 持续集成一直被认为是敏捷开发的重要实践之一，也是提升软件质量的重要手段。特别在团队协作开发中，为项目添加持续集成还是非常有必要的，确保了任何时间、任何地点生成可部署的软件。
+
+#### 2. Jenkins+Git+Gradle实现持续集成
+
+1. 安装Jenkins，安装需要的插件（比如说git插件、Gradle插件），配置JDK，Git，Gradle等编译环境
+2. 创建新的Jenkins项目，配置Git代码仓库地址、配置构建时的Gradle版本，和需要执行的Gradle Task
+3. 配置Jenkins项目的构建参数，比如Gradle Task的参数、渠道参数
+4. 配置邮件通知
+5. 开始构建
+
+#### 3. 参考文章
+        
+[Android Jenkins+Git+Gradle持续集成-实在太详细](https://www.jianshu.com/p/38b2e17ced73)
