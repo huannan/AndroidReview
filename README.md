@@ -954,6 +954,12 @@ Android中，主线程（UI线程）如果在规定时内没有处理完相应�
 
 ### 内存泄漏
 
+#### 0. 内存问题的相关概念
+
+* 内存溢出：指程序在申请内存时，没有足够的空间供其使用
+* 内存泄漏：指程序分配出去的内存不再使用，无法进行回收
+* 内存抖动：指程序短时间内大量创建对象，然后回收的现象
+
 #### 1. 什么是内存泄漏
 
 内存泄漏是一个对象已经不需要再使用了，但是因为其它的对象持有该对象的引用，导致它的内存不能被垃圾回收器回收。内存泄漏的慢慢积累，最终会导致OOM的发生。
@@ -978,6 +984,70 @@ Android中，主线程（UI线程）如果在规定时内没有处理完相应�
 * AsyncTask造成的内存泄漏：由于非静态内部类持有匿名内部类的引用而造成内存泄漏，可以通过AsyncTask内部持有外部Activity的弱引用同时改为静态内部类或在onDestroy()中执行AsyncTask.cancel()进行修复
 * WebView造成的内存泄漏：页面销毁的时候WebView需要正确移除并且调用其destroy方法
 
-#### 5. 参考文章
+#### 5. LeakCanary检测内存泄漏核心原理
+
+1. 给可被回收的对象上打了智能标记（弱引用，Key-Value的形式）。
+2. 监听Activity的生命周期。
+3. 如果Activity销毁之后过一小段时间对象依然没有被释放，就会给内存做个快照（Dump Memory），并且导出到本地文件。
+4. 通过读取、分析这个heap dump文件：根据Key用SQL语句去查询数据库，并且计算出最短的GC root路径，从而找出阻止该对象释放的那个对象。
+5. 通过UI（Debug版本是Notification）的形式把分析结果报告给开发者。
+
+#### 6. 参考文章
 
 [常见的内存泄漏原因及解决方法](https://www.jianshu.com/p/90caf813682d)
+
+[用 LeakCanary 检测内存泄漏](https://academy.realm.io/cn/posts/droidcon-ricau-memory-leaks-leakcanary/)
+
+
+### 内存溢出
+
+#### 1. 内存溢出是什么？
+
+OOM指Out of memory（内存溢出），当前占用内存 + 我们申请的内存资源 超过了虚拟机的最大内存限制就会抛出Out of memory异常。
+
+#### 2. 应用的内存限制与申请大内存
+
+* Android虚拟机对单个应用的最大内存分配值定义在/system/build.prop文件中
+
+    ```java
+    //堆分配的初始大小，它会影响到整个系统对RAM的使用程度，和第一次使用应用时的流畅程度。它值越小，系统ram消耗越慢，但一些较大应用一开始不够用，需要调用gc和堆调整策略，导致应用反应较慢。它值越大，这个值越大系统ram消耗越快，但是应用更流畅。
+    dalvik.vm.heapstartsize=xxxm
+    //单个应用可用最大内存。最大内存限制主要针对的是这个值,它表示单个进程内存被限定在xxxm,即程序运行过程中实际只能使用xxxm内存，超出就会报OOM。（仅仅针对dalvik堆，不包括native堆）
+    dalvik.vm.heapgrowthlimit=xxxm
+    //单个进程可用的最大内存，但如果存在heapgrowthlimit参数，则以heapgrowthlimit为准。heapsize表示不受控情况下的极限堆，表示单个虚拟机或单个进程可用的最大内存。
+    dalvik.vm.heapsize=xxxm
+    ```
+
+    ```java
+    ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+    int memoryClass = am.getMemoryClass();
+    ```
+
+* 每开一个应用就会打开一个独立的虚拟机（这样设计就会在单个程序崩溃的情况下不会导致整个系统的崩溃）
+* 在android开发中，如果要使用大堆，需要在manifest中指定android:largeHeap为true，这样dvm heap最大可达heapsize。尽量少使用large heap。使用额外的内存会影响系统整体的用户体验，并且会使得GC的每次运行时间更长。在任务切换时，系统的性能会变得大打折扣。
+
+#### 3. 常见内存溢出及其解决方案
+
+* 解决应用中的内存泄漏问题。
+* 图片：正确缩放、压缩、解码、回收。
+* 列表控件：重用convertView、使用LRU缓存算法、滚动的时候进行监听，此时不应该加载图片。
+* View：避免在onDraw方法中创建对象。
+* 谨慎使用多进程：使用多进程可以把应用中的部分组件运行在单独的进程当中，这样可以扩大应用的内存占用范围，但是这个技术必须谨慎使用，使用多进程会使得代码逻辑更加复杂，使用不当可能反而会导致显著增加内存。当应用需要运行一个常驻后台的任务，而且这个任务并不轻量，可以考虑使用这个技术。
+* 使用更加轻量的数据结构。例如，我们可以考虑使用ArrayMap/SparseArray而不是HashMap等传统数据结构。
+* 避免在Android里面使用Enum。
+* 字符串拼接：在有些时候，代码中会需要使用到大量的字符串拼接的操作，这种时候有必要考虑使用StringBuilder来替代频繁的“+”。
+* Try catch某些大内存分配的操作。
+* 资源文件需要选择合适的文件夹进行存放。hdpi/xhdpi/xxhdpi等等不同dpi的文件夹下的图片在不同的设备上会经过scale的处理，拉伸之后内存消耗更大。对于不希望被拉伸的图片，需要放到assets或者nodpi的目录下。
+* 在onLowMemory()与onTrimMemory()中适当释放内存。
+* 珍惜Services资源。如果你的应用需要在后台使用service，除非它被触发并执行一个任务，否则其他时候Service都应该是停止状态。另外需要注意当这个service完成任务之后因为停止service失败而引起的内存泄漏。建议使用IntentService。
+* 优化布局层次，减少内存消耗。越扁平化的视图布局，占用的内存就越少，效率越高。
+* 谨慎使用依赖注入框架：使用之后，代码是简化了不少。然而，那些注入框架会通过扫描你的代码执行许多初始化的操作，这会导致你的代码需要大量的内存空间来mapping代码，而且mapped pages会长时间的被保留在内存中。
+* 使用ProGuard来剔除不需要的代码，通过移除不需要的代码，重命名类，域与方法等等对代码进行压缩，优化与混淆。使得代码更加紧凑，能够减少mapping代码所需要的内存空间。
+* 谨慎使用第三方libraries。很多开源的library代码都不是为移动网络环境而编写的，如果运用在移动设备上，并不一定适合。即使是针对Android而设计的library，也需要特别谨慎，特别是如果你知道引入的library具体做了什么事情的时候。
+* 考虑不同的实现方式、方案、策略来优化内存占用。
+
+#### 4. 参考文章
+
+[Android 性能优化(内存之OOM)](https://www.jianshu.com/p/d8aee86463ad)
+
+[Android 查看每个应用的最大可用内存](http://www.cnblogs.com/onelikeone/p/7112184.html)

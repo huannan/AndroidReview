@@ -1,27 +1,37 @@
 package com.nan.androidreview;
 
-import android.app.IntentService;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = MainActivity.class.getSimpleName();
+    private TextView tv_test;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        tv_test = findViewById(R.id.tv_test);
+
         //testFragment();
         //testAsyncTask();
-        testIntentService();
+        //testIntentService();
+
+        testMemory();
+    }
+
+    private void testMemory() {
+        ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        int memoryClass = am.getMemoryClass();
+        tv_test.setText(memoryClass + "");
     }
 
     private void testIntentService() {
