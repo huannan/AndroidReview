@@ -26,3 +26,30 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
+
+////配置lint的jar包
+//configurations {
+//    lintJarImport
+//}
+//
+//dependencies {
+//    lintJarImport project(path: ":lint", configuration: "lintJarOutput")
+//}
+//
+////将jar复制到lint目录下的lint.jar，因为在 lint 命令执行时会检查该文件，存在的话会添加到 lint 检查的队列中
+//task copyLintJar(type: Copy) {
+//    from(configurations.lintJarImport) {
+//        rename {
+//            String fileName ->
+//                'lint.jar'
+//        }
+//    }
+//    into 'build/intermediates/lint/'
+//}
+//
+////当 Project 创建完所有任务的有向图后，通过 afterEvaluate 函数设置一个回调 Closure。将 copyLintJar 插入到 compileLint 之前执行
+////Closure 里，我 disable 了所有 Debug 的 Task
+//project.afterEvaluate {
+//    def compileLintTask = project.tasks.find { it.name == 'compileLint' }
+//    compileLintTask.dependsOn(copyLintJar)
+//}
