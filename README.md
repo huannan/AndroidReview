@@ -1342,3 +1342,22 @@ private boolean isBlock(long endTime) {
 [Android冷启动实现APP秒开](https://www.jianshu.com/p/03c0fd3fc245)
 
 [Android 性能优化 冷启动速度优化](https://blog.csdn.net/u014099894/article/details/53411181)
+
+### APK瘦身
+
+#### 1. APK的组成
+
+asserts
+lib
+res
+dex
+META-INF
+AndroidManifest.xml
+
+#### 2. APK瘦身 
+
+#### 3. 参考文章
+
+[App瘦身最佳实践](https://www.jianshu.com/p/8f14679809b3)
+
+[Android中5种app瘦身方式](https://blog.csdn.net/luckyleaf666/article/details/60572736)
