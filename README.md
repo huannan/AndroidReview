@@ -1345,16 +1345,21 @@ private boolean isBlock(long endTime) {
 
 ### APK瘦身
 
-#### 1. APK的组成
+#### 1. APK文件的组成
 
-asserts
-lib
-res
-dex
-META-INF
-AndroidManifest.xml
+直接在Android Studio中打开APK文件，通过APK分析器，可以看到APK文件的组成成分与比例（实际上是调用AAPT工具的功能）：
 
-#### 2. APK瘦身 
+* asserts：存放一些配置文件或资源文件，比如WebView的本地html，React Native的jsbundle等
+* lib：lib目录下会有各种so文件，分析器会检查出项目自己的so和各种库的so。
+* resources.arsc：编译后的二进制资源文件，里面是id-name-value的一个Map。
+* res：res目录存放的是资源文件。包括图片、字符串。raw文件夹下面是音频文件，各种xml文件等等。
+* dex：dex文件是Java代码打包后的字节码，一个dex文件最多只支持65536个方法，开启了dex分包的话会有多个。
+* META-INF：META-INF目录下存放的是签名信息，用来保证apk包的完整性和系统的安全性，帮助用户避免安装来历不明的盗版APK。
+* AndroidManifest.xml：Android清单文件。
+
+#### 2. 常见APK瘦身方案 
+
+
 
 #### 3. 参考文章
 
