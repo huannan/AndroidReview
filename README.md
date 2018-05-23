@@ -1349,17 +1349,88 @@ private boolean isBlock(long endTime) {
 
 直接在Android Studio中打开APK文件，通过APK分析器，可以看到APK文件的组成成分与比例（实际上是调用AAPT工具的功能）：
 
+![APK组成](https://upload-images.jianshu.io/upload_images/2570030-86d853d513fa3a9e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
 * asserts：存放一些配置文件或资源文件，比如WebView的本地html，React Native的jsbundle等
 * lib：lib目录下会有各种so文件，分析器会检查出项目自己的so和各种库的so。
 * resources.arsc：编译后的二进制资源文件，里面是id-name-value的一个Map。
 * res：res目录存放的是资源文件。包括图片、字符串。raw文件夹下面是音频文件，各种xml文件等等。
 * dex：dex文件是Java代码打包后的字节码，一个dex文件最多只支持65536个方法，开启了dex分包的话会有多个。
-* META-INF：META-INF目录下存放的是签名信息，用来保证apk包的完整性和系统的安全性，帮助用户避免安装来历不明的盗版APK。
+* META-INF：META-INF目录下存放的是签名信息，分别是MANIFEST.MF、CERT.SF、CERT.RSA。用来保证apk包的完整性和系统的安全性，帮助用户避免安装来历不明的盗版APK。
 * AndroidManifest.xml：Android清单文件。
 
 #### 2. 常见APK瘦身方案 
 
+* 优化assets
 
+    * 资源动态下载，字体、js代码这样的资源能动态下载的就做动态下载，虽然复杂度提高，但是实现了动态更新
+    * 压缩资源文件，用到的时候再进行解压
+    * 删除不必要的字体文件中的字体
+    * 减少图标字体（Icon-Font）的使用，多用SVG代替
+
+* 优化lib
+
+    * 配置abiFilters精简so动态库，而已根据需求保留需要的平台
+    
+        ```java
+        defaultConfig {
+            //armeabi是必须包含的，v7是一个图形加强版本，x86是英特尔平台的支持库
+            ndk {
+                abiFilters "armeabi", "armeabi-v7a" ,"x86"
+            }
+        }
+        ```
+
+    * 统计分析用户手机的cpu类型，排除没有或少量用户才会用到的so
+
+* 优化resources.arsc
+
+    * 删除不必要的string entry，你可以借助android-arscblamer来检查出可以优化的部分，比如一些空的引用
+    * 使用微信的资源混淆工具AndResGuard，它将资源的名称进行了混淆（需要重点配置白名单）
+
+* 优化META-INF：除了公钥CERT.RSA没有压缩机会外，其余的两个文件都可以通过混淆资源名称的方式进行压缩
+
+* 优化res
+    
+    * 动态下载资源
+    * 通过Android Studio的重构工具删除无用资源
+    * 打包时剔除无用资源
+       
+        ```java
+        release {
+                zipAlignEnabled true
+                minifyEnabled true  
+                shrinkResources true // 是否去除无效的资源文件   
+                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+                signingConfig signingConfigs.release
+            }
+        ```
+
+    * 删除无用的语言（排除了所有的依赖库的资源）
+    
+        ```java
+        android {
+            //...
+            defaultConfig {
+                resConfigs "zh"
+            }
+        }
+        ```    
+
+    * 控制图片、视频、音频资源的大小，推荐使用有损压缩等其他格式（ogg、svg、webp等）
+    * 统一应用风格，减少shape文件
+    * 使用toolbar，减少menu文件
+    * 通过复用等方式减少layout文件
+    * ...
+    
+* 优化dex：
+
+    * 利用工具（dexcount、statistic、apk-method-count、Lint）分析、精简不必要的方法、空行、依赖库等
+    * 通过proguard来删除无用代码
+    * 剔除无用的测试代码
+    * 依赖第三方库的时候，在打包发版中不要将某些不必要的库进行releaseCompile（比如LeakCanary）
+    * 使用更小库或合并现有库
+    * 减少方法数、使用插件化等方案，不用mulitdex
 
 #### 3. 参考文章
 
