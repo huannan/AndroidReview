@@ -33,40 +33,12 @@
 * 当我们再次回到原Activity时： onRestart ---> onStart ---> onResume
 * 退出当前Activity时： onPause ---> onStop ---> onDestroy
 
-#### 4. Android进程优先级
-
-* 前台进程：Foreground process
-
-    用户正在交互的Activity（onResume()）
-    当某个Service绑定正在交互的Activity
-    被主动调用为前台Service（startForeground()）
-    组件正在执行生命周期的回调（onCreate()、onStart()、onDestory()）
-    BroadcastReceiver正在执行onReceive()
-
-* 可见进程：Visible process
-
-    我们的Activity处在onPause()（没有进入onStop()）
-    绑定到前台Activity的Service
-
-* 服务进程：Service process
-
-    简单的startService()启动。
-
-* 后台进程：Background process
-
-    对用户没有直接影响的进程 --- Activity处于onStop()的时候。
-    android:process=":xxx"
-
-* 空进程：Empty process
-
-    不含有任何的活动的组件。（Android设计的，处于缓存的目的，为了第二次启动更快，采取的一个权衡）
-
-#### 5. Activity任务栈
+#### 4. Activity任务栈
 
 * 有序地管理Activity的先进后出的一种数据结构
 * 安全退出：任务栈中所有的Activity都出栈
 
-#### 6. Activity的启动模式
+#### 5. Activity的启动模式
 
 * standard 标准模式：
 
@@ -87,7 +59,7 @@
 	特点：系统会为这个Activity单独创建一个任务栈，这个任务栈里面只有一个实例存在并且保证不再有其它activity实例进入。
 	应用场景：来电页面。
 
-#### 7. Scheme跳转协议
+#### 6. Scheme跳转协议
 
 ##### 概念
 
@@ -99,7 +71,7 @@ Android中的scheme是一种页面内跳转协议，是一种非常好的实现�
 * 通过在H5页面的锚点跳转相应的页面
 * 根据服务器下发通知栏消息，App跳转相应的页面（包括另外一个APP的页面，作为推广使用）
 
-#### 8. 参考文章
+#### 7. 参考文章
 
 [Android面试（一）：Activity面试你所需知道的一切](https://www.jianshu.com/p/5b11a9eddf86)
 
@@ -1415,7 +1387,7 @@ private boolean isBlock(long endTime) {
                 resConfigs "zh"
             }
         }
-        ```    
+        ```
 
     * 控制图片、视频、音频资源的大小，推荐使用有损压缩等其他格式（ogg、svg、webp等）
     * 统一应用风格，减少shape文件
@@ -1437,3 +1409,74 @@ private boolean isBlock(long endTime) {
 [App瘦身最佳实践](https://www.jianshu.com/p/8f14679809b3)
 
 [Android中5种app瘦身方式](https://blog.csdn.net/luckyleaf666/article/details/60572736)
+
+### 进程及进程保活
+
+#### 1. 查看进程信息
+
+使用ps命令可以查看进程信息：
+
+```bash
+adb shell ps|grep <package_name>
+```
+
+返回的结果分别为：
+
+* 进程当前用户
+* 进程ID
+* 进程的父进程ID
+* 进程的虚拟内存大小
+* 实际驻留”在内存中”的内存大小
+* 进程名
+
+#### 2. Android进程优先级
+
+* 前台进程：Foreground process（用户正在使用的程序，一般系统是不会杀死前台进程的，除非用户强制停止应用或者系统内存不足等极端情况会杀死。）
+
+    * 用户正在交互的Activity（已调用onResume）
+    * 当某个Service绑定正在交互的Activity
+    * 被主动调用为前台Service（startForeground()）
+    * 组件正在执行生命周期的回调（onCreate()、onStart()、onDestory()）
+    * BroadcastReceiver正在执行onReceive()
+
+* 可见进程：Visible process（用户正在使用，看得到，但是摸不着，没有覆盖到整个屏幕,只有屏幕的一部分可见进程不包含任何前台组件，一般系统也是不会杀死可见进程的，除非要在资源吃紧的情况下，要保持某个或多个前台进程存活）
+
+    * Activity不在前台、但仍对用户可见（已调用onPause()，没有调用onStop()））
+    * 绑定到可见（前台）Activity的Service
+
+* 服务进程：Service process（在内存不足以维持所有前台进程和可见进程同时运行的情况下，服务进程会被杀死）
+
+    * 简单的startService()启动，与用户看见的Activity没有直接关联。
+
+* 后台进程：Background process（系统可能随时终止它们，回收内存）
+
+    * 在用户按了"back"或者"home"后,程序本身看不到了,但是其实还在运行的程序。对用户没有直接影响，Activity处于onStop()的时候。
+    * 应用开启的进程：android:process=":xxx"
+
+* 空进程：Empty process（某个进程不包含任何活跃的组件时该进程就会被置为空进程，完全没用，优先级最低，杀了它只有好处没坏处，第一被回收）
+
+    * 不含有任何的活动的组件。（Android设计的，处于缓存的目的，为了第二次启动更快，采取的一个权衡）
+    
+#### 3. 进程回收策略（Low memory Killer）
+
+Low memory Killer：定时执行，一旦发现内存低于某个内存阈值，Low memory Killer会根据**进程的优先级、进程占用的内存大小等因素**通过复杂的评分机制，对进程进行打分，然后将分数高的进程判定为bad进程，杀死并释放内存
+
+#### 4. 进程保活方案
+
+* 与手机厂商合作，加入白名单
+* 监听锁屏广播，在RemoteService中开启/关闭一个像素的Activity
+* 利用Android5.0以下系统同一时间只能杀死一个进程的漏洞（5.0之后同一个Group的进程都会被杀死），开启双进程守护
+* 利用前台服务，startForeground(ID， new Notification())，发送空的通知
+* 利用系统黏性服务机制拉活
+* 利用开机，网络切换、拍照、拍视频等系统广播也能唤醒，不过Android N已经将这三种广播取消了
+* 利用Native进程监听进程是否存活，否则拉活
+* 利用JobScheduler机制代替Native进程实现拉活
+* 利用账号同步机制拉活。用户强制停止都杀不起创建一个账号并设置同步器，创建周期同步，系统会自动调用同步器，这样就能激活APP，局限是国产机会修改最短同步周期，并且需要联网才能使用。
+
+#### 5. 参考文章
+
+[Android进程保活的一般套路](https://www.jianshu.com/p/1da4541b70ad)
+
+[关于进程保活的两三事——新手升级经验卡](https://www.jianshu.com/p/c6f4c3a69a2c)
+
+[Android里帐户同步的实现](https://blog.csdn.net/lyz_zyx/article/details/73571927)
