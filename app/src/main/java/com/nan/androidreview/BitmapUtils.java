@@ -472,4 +472,32 @@ public class BitmapUtils {
         return map;
     }
 
+    public static Bitmap thumbnail(String path, int width, int height, boolean autoRotate) {
+
+        //1. 获得Bitmap的宽高，但是不加载到内存
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, options);
+        int srcWidth = options.outWidth;
+        int srcHeight = options.outHeight;
+
+        //2. 计算图片缩放倍数
+        int inSampleSize = 1;
+        if (srcHeight > height || srcWidth > width) {
+            if (srcWidth > srcHeight) {
+                inSampleSize = Math.round(srcHeight / height);
+            } else {
+                inSampleSize = Math.round(srcWidth / width);
+            }
+        }
+
+        //3. 真正加载图片到内存当中
+        options.inJustDecodeBounds = false;
+        options.inSampleSize = inSampleSize;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        return BitmapFactory.decodeFile(path, options);
+    }
+
 }
