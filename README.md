@@ -631,7 +631,26 @@ Handler的工作是依赖于Looper的，而Looper（与消息队列）又是属�
 * 应用程序的入口是ActivityThread的main方法，在这个方法里面会创建Looper，并且执行Looper的loop方法来启动消息的循环，使得应用程序一直运行。
 * 有时候出于业务需要，主线程可以向子线程发送消息。子线程的Handler必须按照上述方法创建，并且关联Looper。
 
-#### 6. 参考文章
+#### 6. 为什么不能在子线程更新UI？
+
+UI更新的时候，会对当前线程进行检验，如果不是主线程，则抛出异常： 
+     
+```java
+void checkThread() {
+    if (mThread != Thread.currentThread()) {
+        throw new CalledFromWrongThreadException(
+                "Only the original thread that created a view hierarchy can touch its views.");
+    }
+}
+```
+
+比较特殊的三种情况：
+     
+* 在Activity创建完成后（Activity的onResume之前ViewRootImpl实例没有建立），mThread被赋值为主线程（ViewRootImpl），所以直接在onCreate中创建子线程是可以更新UI的
+* 在子线程中添加 Window，并且创建 ViewRootImpl，可以在子线程中更新view
+* SurfaceView可以在其他线程更新
+
+#### 7. 参考文章
 
 [Android 源码分析之旅3.1--消息机制源码分析](https://www.jianshu.com/p/ac50ba6ba3a2)
 
@@ -1480,3 +1499,55 @@ Low memory Killer：定时执行，一旦发现内存低于某个内存阈值，
 [关于进程保活的两三事——新手升级经验卡](https://www.jianshu.com/p/c6f4c3a69a2c)
 
 [Android里帐户同步的实现](https://blog.csdn.net/lyz_zyx/article/details/73571927)
+
+### Bitmap
+
+#### 1. Bitmap的理解
+
+Bitmap是Android系统中的图像处理的最重要类之一。用它可以获取图像文件信息，进行图像剪切、旋转、缩放等操作，并可以指定格式保存图像文件。
+
+#### 2. Bitmap的内存分配策略
+
+在Androin3.0之前的版本，Bitmap像素数据存放在Native内存中，而且Nativie内存的释放是不确定的，容易内存溢出而Crash，不使用的图片要调用recycle()进行回收。
+
+![3.0之前](https://upload-images.jianshu.io/upload_images/2570030-ad2a1add2b8f0dc6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+从Androin3.0开始，Bitmap像素数据和Bitmap对象一起存放在虚拟机的堆内存中（从源代码上看是多了一个byte[] buffer用来存放数据），也就是我们常说的Java Heap内存。
+
+![3.0之后](https://upload-images.jianshu.io/upload_images/2570030-66a393b6609a8028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+从Androin8.0开始，Bitmap像素数据存重新回到Native内存中
+
+![8.0之前](https://upload-images.jianshu.io/upload_images/2570030-ad2a1add2b8f0dc6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 3. Bitmap的内存占用计算
+
+Bitmap占用的内存 = width * height * 一个像素所占的内存
+
+Bitmap的内存占用大小与三个因素有关：
+
+* 色彩格式，前面我们已经提到，如果是ARGB8888那么就是一个像素4个字节，如果是RGB565那就是2个字节
+* 原始文件存放的资源目录（分辨率越小，内存占用越小）
+* 目标屏幕的密度（屏幕的密度越小，内存占用越小）
+
+#### 4. Bitmap的回收
+
+* 在Android3.0以前以及Android8.0之后Bitmap的像素数据是存放Native内存中，我们需要回收Native层和Java层的内存。
+* 在Android3.0以后以及Android8.0之前Bitmap的像素数据是存放在Java层的内存中的，我们只要回收堆内存即可。
+* 官方建议我们3.0以后使用recycle方法进行回收，该方法也可以不主动调用，因为垃圾回收器会自动收集不可用的Bitmap对象进行回收。
+* recycle方法会判断Bitmap在不可用的情况下，将发送指令到垃圾回收器，让其回收native层和Java层的内存，则Bitmap进入dead状态。
+* recycle方法是不可逆的，如果再次调用getPixels()等方法，则获取不到想要的结果。
+
+#### 5. Bitmap的重用
+
+#### 6. Bitmap加载大图与防止OOM
+
+8M
+
+#### 7. Bitmap加载优化
+
+分块解码、硬解码
+
+#### 8. LRU缓存机制
+
+#### 9. 参考文章
