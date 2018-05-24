@@ -1655,12 +1655,27 @@ LRU缓存机制的核心原理：
 * 避免使用静态变量保存核心、重要的数据。因为静态变量在进程被杀死的时候，会重新初始化
 * 官方推荐使用五大数据存储方式
 
-### Sp
+#### 3. 参考文章
 
-不能跨进程
+[安卓中五种数据存储方式](https://blog.csdn.net/zsr0526/article/details/53166659)
 
+### SharedPreferences
+
+#### 1. SharedPreferences基本概念以及优缺点
+
+* SharedPreferences用来保存基于XML文件存储的key-value键值对数据，通常用来存储一些简单的配置信息。数据存储在/data/data/<package name>/shared_prefs目录下。
+* 只能存储少量boolean、int、float、long、String五种简单的数据类型，操作简单，但是无法完全替代其他数据存储方式。
+* 无法进行条件查询等复杂操作，对于数据的处理只能是简单的处理。
+
+#### 2. 同步与异步
+
+不能跨进程同步
 不能过大
 UI
 临时对象，内存抖动、OOM
 
-### 跨进程通信
+#### 参考文章
+
+[Android面试一天一题（14 Day：SharedPreferences）](https://www.jianshu.com/p/4dd53e1be5ba)
+
+### 跨进程通信方式
