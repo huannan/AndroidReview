@@ -1667,15 +1667,58 @@ LRU缓存机制的核心原理：
 * 只能存储少量boolean、int、float、long、String五种简单的数据类型，操作简单，但是无法完全替代其他数据存储方式。
 * 无法进行条件查询等复杂操作，对于数据的处理只能是简单的处理。
 
-#### 2. 同步与异步
+#### 2. SharedPreferences的实现原理
 
-不能跨进程同步
-不能过大
-UI
-临时对象，内存抖动、OOM
+SharedPreferences是个单例，具体实现在SharedPrefencesImpl。任意Context拿到的都是同一个实例。
+SharedPreferences在实例化的时候会把SharedPreferences对应的xml文件内容通过pull解析全部读取到内存当中（mMap）。
+关于读操作：对于非多进程兼容的SharedPreferences的读操作是从内存读取的，不涉及IO操作。写入的时候由于内存已经保存了完整的xml数据，然后新写入的数据也会同步更新到内存，所以无论是用commit还是apply都不会影响立即读取。
+关于写操作：除非需要关心xml是否写入文件成功，否则你应该在所有调用commit的地方改用apply。
+
+#### 3. 同步与异步提交
+
+##### commit方法的特点
+
+* 存储的过程是原子操作
+* commit方法有返回值，设置成功为ture，否则为false
+* 同时对一个SharedPreferences设置值最后一次的设置会直接覆盖前次值
+* 如果不关心设置成功与否，并且是在主线程设置值，建议用apply方法
+
+##### apply方法的特点
+
+* 存储的过程也是原子操作
+* apply没有返回值，存储是否成功无从知道
+* apply写入过程分两步，第一步先同步写入内存，第二部在异步写入物理磁盘
+* apply写入的过程会阻塞同一个SharedPreferences对象的其他写入操作
+
+##### 总结
+
+apply比commit效率高，commit直接是向物理介质写入内容，而apply是先同步将内容提交到内存，然后在异步的向物理介质写入内容。这样做显然提高了效率。
+
+#### 4. SharedPreferences不能实现跨进程同步问题
+
+##### 现象
+
+* 数据安全问题：数据读写不能实时更新而造成数据写入丢失等问题，每个进程都会维护一个SharedPreferences的内存副本，副本之间互不干扰
+* getSharedPreferences时候的空指针问题
+
+##### 解决方案
+
+* 通过查看 API 文档发现，在API Level > 11即Android 3.0可以通过Context.MODE_MULTI_PROCESS属性来实现多进程间的数据共享
+* 但是在API 23时该属性被废弃。官方文档中明确写明SharedPreferences不适用于多进程间共享数据，推荐使用ContentProvider等方式
+
+#### 5. SharedPreferences存储的数据不能过大
+
+* SharedPreferences存储的基本的配置型数据，不能存储大量数据
+* SharedPreferences的读写操作可能会阻塞主线程，引起界面卡顿甚至ANR
+* SharedPreferences的Key-Value的mMap是一直存放在内存当中的，这样会带来极大的内存消耗，甚至产生泄漏、OOM
+* SharedPreferences对Key-Value频繁读写会产生大量的临时对象，会造成内存抖动，频繁GC会造成界面卡顿等问题
 
 #### 参考文章
 
 [Android面试一天一题（14 Day：SharedPreferences）](https://www.jianshu.com/p/4dd53e1be5ba)
 
-### 跨进程通信方式
+[SharedPreferences多进程共享数据爬坑之旅](https://www.jianshu.com/p/e8913d42181b)
+
+[深入理解Android SharedPreferences的commit与apply](https://www.jianshu.com/p/3b2ac6201b33)
+
+[SharedPreferences commit跟apply的区别](https://www.jianshu.com/p/790510b29efe)

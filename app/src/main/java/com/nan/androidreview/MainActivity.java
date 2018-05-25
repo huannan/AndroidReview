@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         //testAsyncTask();
         //testIntentService();
         //testMemory();
-
+        //### 跨进程通信方式
         testBitmap();
     }
 
