@@ -33,7 +33,21 @@ public class MainActivity extends AppCompatActivity {
         //testAsyncTask();
         //testIntentService();
         //testMemory();
-        testBitmap();
+        //testBitmap();
+
+        testCache();
+    }
+
+    private void testCache() {
+
+        String cache = "0kb";
+        try {
+            cache = CacheManager.getTotalCacheSize(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        tv_test.setText(cache);
+
     }
 
     private void testBitmap() {
