@@ -1492,7 +1492,11 @@ Low memory Killer：定时执行，一旦发现内存低于某个内存阈值，
 * 利用JobScheduler机制代替Native进程实现拉活
 * 利用账号同步机制拉活。用户强制停止都杀不起创建一个账号并设置同步器，创建周期同步，系统会自动调用同步器，这样就能激活APP，局限是国产机会修改最短同步周期，并且需要联网才能使用。
 
-#### 5. 参考文章
+#### 5. 跨进程通信方式
+
+![跨进程通信](https://upload-images.jianshu.io/upload_images/2570030-ecbfa6e37b8c4705.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 6. 参考文章
 
 [Android进程保活的一般套路](https://www.jianshu.com/p/1da4541b70ad)
 
@@ -1713,7 +1717,7 @@ apply比commit效率高，commit直接是向物理介质写入内容，而apply�
 * SharedPreferences的Key-Value的mMap是一直存放在内存当中的，这样会带来极大的内存消耗，甚至产生泄漏、OOM
 * SharedPreferences对Key-Value频繁读写会产生大量的临时对象，会造成内存抖动，频繁GC会造成界面卡顿等问题
 
-#### 参考文章
+#### 6. 参考文章
 
 [Android面试一天一题（14 Day：SharedPreferences）](https://www.jianshu.com/p/4dd53e1be5ba)
 
