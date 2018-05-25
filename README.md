@@ -1429,7 +1429,7 @@ private boolean isBlock(long endTime) {
 
 [Android中5种app瘦身方式](https://blog.csdn.net/luckyleaf666/article/details/60572736)
 
-### 进程及进程保活
+### 进程及进程保活、跨进程通信
 
 #### 1. 查看进程信息
 
@@ -1726,3 +1726,15 @@ apply比commit效率高，commit直接是向物理介质写入内容，而apply�
 [深入理解Android SharedPreferences的commit与apply](https://www.jianshu.com/p/3b2ac6201b33)
 
 [SharedPreferences commit跟apply的区别](https://www.jianshu.com/p/790510b29efe)
+
+### 数据缓存
+### 路由
+### 屏幕适配
+### 动态权限适配
+### 动画机制
+### View的绘制以及事件传递机制
+### 设计模式与架构
+### 插件化
+### 热更新
+### Kotlin
+### 开源框架源码分析
