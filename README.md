@@ -1669,7 +1669,8 @@ LRU缓存机制的核心原理：
 
 ##### 数据缓存
 
-* 内存缓存
+* 推荐使用LRU策略缓存
+* 内存缓存：存储在集合当中，重要数据不推荐使用静态变量存储
 * 磁盘缓存：根据数据类型、应用场合选择Android中5大数据存储方式实现缓存
 * 使用一些实现了内存缓存、磁盘缓存、缓存时间等强大功能的第三方开源的缓存库：ACache、RxCache等
 
@@ -1752,14 +1753,109 @@ apply比commit效率高，commit直接是向物理介质写入内容，而apply�
 
 [SharedPreferences commit跟apply的区别](https://www.jianshu.com/p/790510b29efe)
 
-### 数据缓存
-### 路由
+### 组件化
+
+#### 1. 组件化的基本概念
+
+组件化开发就是将一个app分成多个模块，每个模块都是一个组件（Module），开发的过程中我们可以让这些组件相互依赖或者单独调试部分组件等，但是最终发布的时候是将这些组件合并统一成一个apk，这就是组件化开发。
+
+![组件化](https://upload-images.jianshu.io/upload_images/2570030-9c936b1ed794afca.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 2. 组件化的特点
+
+* 公共资源、业务、模块混在一起耦合度太高，组件化可以实现模块之间的解耦、单独测试验证，又实现了模块共享资源和工具类
+* 组件化可以提高开发效率：每个模块可以独立开发编译运行
+* 利用组件化的思想对开源框架进行一次封装，除了防止代码入侵以外，同时也简化了使用，实现了项目的需求
+
+#### 3. 组件化的实现
+
+组件化只是一种项目架构的思想，并没有具体的实现方案，需要根据公司的业务、项目性质等进行具体实现。一般的套路如下：
+
+![组件化模型](https://upload-images.jianshu.io/upload_images/2570030-d1b08f88dd5e90d1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+![组件化的一些概念](https://upload-images.jianshu.io/upload_images/2570030-59acd30beb3ea072.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+组件化中，最好提供一个统一路由方案实现模块之间的分发和跳转。
+
+![路由](https://upload-images.jianshu.io/upload_images/2570030-fde60e1238ce6bbc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 4. 参考文章
+
+[Android组件化和插件化开发](https://www.cnblogs.com/android-blogs/p/5703355.html)
+
+[Android组件化方案](https://blog.csdn.net/guiying712/article/details/55213884)
+
+### 插件化
+
+#### 1. 插件化的基本概念
+
+插件化开发和组件化开发略有不用，插件化开发时将整个app拆分成很多模块，这些模块包括一个宿主和多个插件，**与组件化最大的不同是：插件化中每个模块都是一个单独的apk（组件化的每个模块是个lib）**，最终打包的时候将宿主apk和插件apk分开或者联合打包。
+
+![插件化](https://upload-images.jianshu.io/upload_images/2570030-b5ca3eb8eabf4cd1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 2. 插件化的特点
+
+* 解决应用越来越大所带来的技术限制，比如65535方法数量限制
+* 应用越来越大的时候多人合作开发的问题：插件化可以实现宿主和插件分开编译、并行开发，提高开发效率并且分工明确
+* 插件模块的动态按需下载，减少宿主APK的体积
+* 插件模块的动态更新可以解决线上BUG或者上架活动，达到热更新、热修复的目的
+* 带有插件化、热更新的APK不能在Google Play上线，也就是没有海外市场
+
+#### 3. 插件化的核心原理
+
+* 通过类加载机制（DexClassLoader）加载插件APK
+* 通过代理机制（主要是动态代理）实现Activity等组件的生命周期
+* 通过Java的反射机制结合面向接口（抽象）编程、面向切面程，实例化并且调用插件中的代码
+* 访问插件中的资源：通过反射生成AssetManager对象并且通过反射调用addAssetPath方法加载插件中的资源（资源、主题等）
+* 利用Hook机制对ActivityManagerService进行Hook，实现启动一个没有在清单文件中注册的插件Activity
+* 不同框架的具体实现和原理都不一样……
+
+#### 4. 常见插件化框架（按照时间先后排列）
+
+[AndroidDynamicLoader](https://github.com/mmin18/AndroidDynamicLoader)：Android 动态加载框架，他不是用代理 Activity 的方式实现而是用 Fragment 以及 Schema 的方式实现
+
+[PluginMgr](https://github.com/houkx/android-pluginmgr)：不需要插件规范的apk动态加载框架。
+
+[Dynamic-load-apk](https://github.com/singwhatiwanna/dynamic-load-apk)：Android 使用动态加载框架DL进行插件化开发
+
+[Direct-Load-apk](https://github.com/mmyydd/Direct-Load-apk):Direct - load - apk 能够加载插件的全部 资源. 支持 插件间 Activity跳转. 不像 "dynamic load - apk" 这个项目, "Direct - load - apk" 不需要对插件有任何约束，也不需要在插件中引入jar和继承自定义Activity，可以直接使用this指针。
+
+[Android-Plugin-Framework](https://github.com/limpoxe/Android-Plugin-Framework)：此项目是Android插件开发框架完整源码及示例。用来通过动态加载的方式在宿主程序中运行插件APK
+
+[ACDD](https://github.com/bunnyblue/ACDD)：非代理Android动态部署框架
+
+[DynamicAPK](https://github.com/CtripMobile/DynamicAPK)：实现Android App多apk插件化和动态加载，支持资源分包和热修复.携程App的插件化和动态加载框架
+
+比较新的，有代表性的有下面4个：
+
+[DroidPlugin](https://github.com/Qihoo360/DroidPlugin)：是360手机助手在Android系统上实现了一种新的插件机制
+
+[Small](https://github.com/wequick/Small)：世界那么大，组件那么小。Small，做最轻巧的跨平台插件化框架
+
+[VirtualAPK](https://github.com/didi/VirtualAPK)：VirtualAPK是滴滴出行自研的一款优秀的插件化框架
+
+[RePlugin](https://github.com/Qihoo360/RePlugin)：RePlugin是一套完整的、稳定的、适合全面使用的，占坑类插件化方案，由360手机卫士的RePlugin Team研发，也是业内首个提出”全面插件化“（全面特性、全面兼容、全面使用）的方案
+
+#### 5. 参考文章
+
+[Android插件化技术入门](https://www.jianshu.com/p/b6d0586aab9f)
+
+[插件化开发小结](https://www.jianshu.com/p/71bd20eb5ec4)
+
+[Android博客周刊专题之 插件化开发](http://www.androidblog.cn/index.php/Index/detail/id/16#)
+
+[Android开源插件化框架汇总](https://blog.csdn.net/hp910315/article/details/78305357)
+
+
+### View的绘制以及事件传递机制
+http://hencoder.com/
+
+### 热更新
+### 动画机制
 ### 屏幕适配
 ### 动态权限适配
-### 动画机制
-### View的绘制以及事件传递机制
 ### 设计模式与架构
-### 插件化
-### 热更新
+
+### 路由
 ### Kotlin
 ### 开源框架源码分析
