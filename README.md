@@ -1826,7 +1826,7 @@ apply比commit效率高，commit直接是向物理介质写入内容，而apply�
 
 [DynamicAPK](https://github.com/CtripMobile/DynamicAPK)：实现Android App多apk插件化和动态加载，支持资源分包和热修复.携程App的插件化和动态加载框架
 
-比较新的，有代表性的有下面4个：
+**比较新的，有代表性的有下面4个：**
 
 [DroidPlugin](https://github.com/Qihoo360/DroidPlugin)：是360手机助手在Android系统上实现了一种新的插件机制
 
@@ -1846,16 +1846,93 @@ apply比commit效率高，commit直接是向物理介质写入内容，而apply�
 
 [Android开源插件化框架汇总](https://blog.csdn.net/hp910315/article/details/78305357)
 
+### 热修复
+
+#### 1. 热修复主要解决的问题
+
+* 版本发布之后发现严重BUG，需要紧急动态修复
+* 小功能即时上线、下线，比如节日活动
+
+#### 2. 传统开发流程与热修复开发流程对比
+
+![传统开发流程](https://upload-images.jianshu.io/upload_images/2570030-40ca183d39bc1206.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+从流程来看，传统的开发流程存在很多弊端：
+
+* 重新发布版本代价太大
+* 用户下载安装成本太高
+* BUG修复不及时，用户体验太差
+
+![热修复开发流程](https://upload-images.jianshu.io/upload_images/2570030-76c6b06852c19846.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+而热修复的开发流程显得更加灵活，优势很多：
+
+* 无需重新发版，实时高效热修复
+* 用户无感知修复（甚至无需重启应用），无需下载新的应用，代价小
+* 修复成功率高，把损失降到最低
+
+#### 3. 热修复补丁修复详细工作流程
+
+1. 线上检查到Crash
+2. 拉出BugFix分支修复Crash问题
+3. jenkins构建和补丁生成
+4. app通过推送或主动拉取补丁文件
+5. 将BugFix代码合到master上
+
+#### 4. 热修复的两大核心原理
+
+* ClassLoader加载方案
+* Native层替换方案（Hook Native）
+
+#### 5. 热修复主流框架及实现原理
+
+##### QQ空间的超级补丁技术
+      
+超级补丁技术基于DEX分包方案，使用了多DEX加载的原理，大致的过程就是：把BUG方法修复以后，放到一个单独的DEX里，插入到dexElements数组的**最前面**，让虚拟机去**优先**加载修复完后的方法。
+
+当patch.dex中包含Test.class时就会优先加载，在后续的DEX中遇到Test.class的话就会直接返回而不去加载，这样就达到了修复的目的。
+
+![QQ空间超级补丁技术原理](https://upload-images.jianshu.io/upload_images/2570030-4d9af8d7893c2f29.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+##### 微信的Tinker
+      
+微信针对QQ空间超级补丁技术的不足提出了一个提供DEX差量包，整体替换DEX的方案。主要的原理是与QQ空间超级补丁技术基本相同，区别在于不再将patch.dex增加到elements数组中，**而是差量的方式给出patch.dex，然后将patch.dex与应用的classes.dex合并**，然后整体替换掉旧的DEX文件，以达到修复的目的。
+
+![Thinker原理](https://upload-images.jianshu.io/upload_images/2570030-1286a5fead390ec7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+##### 阿里的AndFix
+      
+AndFix不同于QQ空间超级补丁技术和微信Tinker通过增加或替换整个DEX的方案，提供了一种运行时通过Hook Native方法，在Native修改Filed指针的方式，实现Java方法的替换，达到即时生效无需重启，对应用无性能消耗的目的。
+
+![AndFix原理](https://upload-images.jianshu.io/upload_images/2570030-ab157bc543692e01.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+##### 美团的Robust
+
+主要原理：在每个方法前加入一段代码，如果patch.jar存在，则加载patch.jar中的代码片段，否则执行原本的代码片段。
+
+![Robust原理](https://upload-images.jianshu.io/upload_images/2570030-7f62a2c451af8d57.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+##### 饿了么的Amigo
+
+Amigo 原理与 Tinker 基本相同，但是在 Tinker 的基础上，进一步实现了 so 文件、资源文件、Activity、BroadcastReceiver 的修复，几乎可以号称全面修复，不愧 Amigo（朋友）这个称号，能在危急时刻送来全面的帮助。
+
+#### 6. 三大主流框架对比
+
+![框架对比](https://upload-images.jianshu.io/upload_images/2570030-a13e268763506679.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 7. 参考文章
+
+[Android热修复技术选型——三大流派解析](http://www.cnblogs.com/alibaichuan/p/5863616.html)
+
+[Android 插件化和热修复知识梳理](https://www.jianshu.com/p/704cac3eb13d)
 
 ### View的绘制以及事件传递机制
 http://hencoder.com/
 
-### 热更新
 ### 动画机制
 ### 屏幕适配
 ### 动态权限适配
 ### 设计模式与架构
-
 ### 路由
 ### Kotlin
 ### 开源框架源码分析
