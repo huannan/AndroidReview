@@ -8,8 +8,10 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
+import com.alibaba.android.arouter.launcher.ARouter;
 import com.bumptech.glide.Glide;
 import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -34,8 +36,21 @@ public class MainActivity extends AppCompatActivity {
         //testIntentService();
         //testMemory();
         //testBitmap();
+        //testCache();
 
-        testCache();
+        testRouter();
+    }
+
+    private void testRouter() {
+        tv_test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ARouter.getInstance()
+                        .build("/com/a1")
+                        .withInt("i", 1)
+                        .navigation(MainActivity.this, 100);
+            }
+        });
     }
 
     private void testCache() {

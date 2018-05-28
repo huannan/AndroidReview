@@ -7,6 +7,9 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 
+import com.alibaba.android.arouter.facade.annotation.Route;
+
+@Route(path = "/com/a1")
 public class HandlerThreadActivity extends AppCompatActivity {
 
     private TextView tvMain;
