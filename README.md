@@ -1949,21 +1949,51 @@ Amigo 原理与 Tinker 基本相同，但是在 Tinker 的基础上，进一步�
 * 路由的动态拦截功能：不使用路由，每次打开新的页面都需要做登录验证
 * 路由实现了页面统一跳转：H5、Android、iOS地址不一样，不利于统一相互跳转协议、不利于服务器端（例如推送、活动Banner等）对APP页面进行动态配置
 
-#### 3. 路由的常见功能及其实现思路和核心原理
+#### 4. 路由的常见功能及其实现思路和核心原理
 
+* 路由注册
 
+    * AndroidManifest里面的Activity声明scheme码是不安全的，所有App都可以打开这个页面，这里就产生有三种方式去注册：
+    * 注解产生路由表，通过DispatchActivity转发Intent
+    * AndroidManifest注册，将其export=false，再通过DispatchActivity转发Intent，天猫就是这么做的，比上面的方法的好处是路由查找都是系统调用，省掉了维护路由表的过程，但是AndroidManifest配置还是比较不方便的
+    * 注解自动修改AndroidManifest，这种方式可以避免路由表汇总的问题，方案是这样的，用自定义Lint扫描出注解相关的Activity，然后在processManifestTask后面修改AndroidManifest，该方案不稳定
 
-#### 4. 常见的路由框架对比
+* 路由表生成
+
+    * 用APT(Annotation Processing Tool)生成URL和Activity的对应关系、并且（结合路由分组策略）进行路由汇总
+
+* 路由分发
+
+    * 现在所有路由方案分发都是用Activity做分发的
+
+* 结果返回
+
+    * 捕获onActivityResult
+
+* 动态拦截
+
+    * 拦截器是重中之重，有了拦截器可以做好多事情。ARouter是用线程等待实现的（等所有注册的拦截器处理完成之后才会进行下一步分发跳转）
+
+* 参数获取
+
+    * 大部分路由库都是手动获取参数的，这样还要传入参数key比较麻烦，有三种做法：
+    * Hook掉Instrumentation的newActivity方法，注入参数
+    * 注册ActivityLifecycleCallbacks方法，注入参数
+    * APT生成注入代码，onCreate的时候bind一下
+
+#### 5. 常见的路由框架对比
 
 ![常见路由框架对比](https://upload-images.jianshu.io/upload_images/2570030-9ed91edb71aefecc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-#### 5. 参考文章
+#### 6. 参考文章
 
 [需要给activity跳转增加路由么？](https://www.zhihu.com/question/40750153)
 
 [Android 组件化 —— 路由设计最佳实践](https://www.jianshu.com/p/8a3eeeaf01e8)
 
 [Android 路由框架ARouter最佳实践](https://blog.csdn.net/zhaoyanjun6/article/details/76165252)
+
+[开源最佳实践：Android平台页面路由框架ARouter](https://yq.aliyun.com/articles/71687?spm=5176.100240.searchblog.7.8os9Go)
 
 [一款可能是最容易使用的对页面、服务的路由框架。使用APT实现](https://www.jianshu.com/p/9acd0dfccdc1)
 
