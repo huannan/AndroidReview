@@ -3,13 +3,18 @@ package com.nan.androidreview;
 import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.bumptech.glide.Glide;
@@ -30,15 +35,55 @@ public class MainActivity extends AppCompatActivity {
 
         tv_test = findViewById(R.id.tv_test);
 
-        requestPermissions();
+        //requestPermissions();
         //testFragment();
         //testAsyncTask();
         //testIntentService();
         //testMemory();
         //testBitmap();
         //testCache();
+        //testRouter();
+        testPermissions();
+    }
 
-        testRouter();
+    public static final int CODE_READ_CONTACTS = 0x01;
+
+    private void testPermissions() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, CODE_READ_CONTACTS);
+
+        } else {
+
+            Toast.makeText(this, "权限已经正确授予", Toast.LENGTH_SHORT).show();
+
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case CODE_READ_CONTACTS: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                    Toast.makeText(this, "权限已经正确授予", Toast.LENGTH_SHORT).show();
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+
+                    Toast.makeText(this, "权限被拒绝", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
     private void testRouter() {

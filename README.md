@@ -1999,11 +1999,53 @@ Amigo 原理与 Tinker 基本相同，但是在 Tinker 的基础上，进一步�
 
 [RouterKit](https://github.com/gybin02/RouterKit)
 
+
+### Android权限机制和动态权限适配
+
+#### 1. 什么是Android权限机制
+
+* Android6.0以前：开发者在AndroidManifest文件中声明需要的权限，APP安装时，系统提示用户APP将获取的权限，需要用户同意授权才能继续安装，从此APP便永久的获得了授权。
+* Android6.0之后：引入动态权限的机制。在APP运行时，用户可以根据自身的需要，决定是否授予APP**危险权限**，同时，用户也可以很方便回收授予的权限。动态权限管理的机制，对于用户的隐私保护是更加适用的。
+
+#### 2. 危险权限（组）与一般权限
+
+* 危险权限（组）Dangerous Permissions：联系人、电话、相机、定位、存储、录音、短信、日历、传感器
+* 一般权限Normal Permissions：除危险权限之外的权限，比如网络、WIFI、蓝牙、闹钟、壁纸、NFC等
+
+注意：
+
+* 对于危险权限的分组，如果申请某个危险的权限，假设app早已被用户授权了同一组的某个危险权限，那么系统会立即授权，而不需要用户去点击授权。
+* 不要对权限组过多的依赖，尽可能对每个危险权限都进行正常流程的申请，因为在后期的Android版本中这个权限组可能会产生变化。
+
+#### 3. 如何适配Android6.0动态权限及其兼容性问题
+
+##### 动态权限适配
+
+* APP要适配Android6.0非常简单，只需要在清单文件中配声明权限，然后将targetSdkVersion升级到23及以上，同时加入权限检查、申请、处理申请结果等代码逻辑即可。
+* 相关重要API：
+
+    * 检查权限：ContextCompat.checkSelfPermission()
+    * 申请授权：ActivityCompat.requestPermissions()
+    * 处理回调：onRequestPermissionsResult()
+
+* 权限适配的代码封装，同时也可以使用一些封装好的开源库：MPermission、RxPermission等
+
+##### 动态权限的运行兼容性问题
+
+* 首先，旧版本APP（targetSdkVersion低于23），因为没有适配权限的申请相关逻辑，在Android6.0以上机型运行的时候，仍然采用安装时授权的方案。
+* 适配了Android6.0的APP，在低版本Android系统上运行的时候，仍然采用安装时授权的方案。
+* 开发者需要注意的是，权限申请的代码逻辑只应该在Android6.0及以上的机型被执行。（因此推荐使用**XXXCompat的类**，这种类已经对Android版本进行了判断）
+
+#### 4. 参考文章
+
+[Android 权限机制与适配经验（QQ音乐）](https://juejin.im/entry/58b2e490ac502e0069d9ae62)
+
+[Android 6.0 运行时权限处理完全解析（鸿洋）](https://blog.csdn.net/lmj623565791/article/details/50709663)
+
 ### View的绘制以及事件传递机制
 http://hencoder.com/
 ### 动画机制
 ### 屏幕适配
-### 动态权限适配
 ### 设计模式与架构
 ### Kotlin
 ### 开源框架源码分析
