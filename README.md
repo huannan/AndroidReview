@@ -2049,3 +2049,5 @@ http://hencoder.com/
 ### 设计模式与架构
 ### Kotlin
 ### 开源框架源码分析
+
+https://blog.csdn.net/guolin_blog/article/details/53122387
