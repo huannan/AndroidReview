@@ -122,3 +122,18 @@ public class TCPClient {
 [面试记录第二十三节——（java网络编程、BIO/NIO/AI0）](https://blog.csdn.net/bobo89455100/article/details/78250104)
 
 
+### IO
+
+#### 1. Java中的IO
+
+#### 2. BIO（阻塞型IO）
+
+#### 3. NIO（非阻塞型IO）
+
+#### 参考文章
+
+[深入分析 Java I/O 的工作机制](https://www.ibm.com/developerworks/cn/java/j-lo-javaio/)
+
+[Java NIO 系列教程](http://ifeve.com/java-nio-all/)
+
+[Java NIO原理图文分析及代码实现](http://weixiaolu.iteye.com/blog/1479656)
