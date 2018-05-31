@@ -2046,8 +2046,14 @@ Amigo 原理与 Tinker 基本相同，但是在 Tinker 的基础上，进一步�
 http://hencoder.com/
 ### 动画机制
 ### 屏幕适配
+[Android新特性介绍，ConstraintLayout完全解析](https://blog.csdn.net/guolin_blog/article/details/53122387)
 ### 设计模式与架构
 ### Kotlin
 ### 开源框架源码分析
+### Java高级基础
 
-https://blog.csdn.net/guolin_blog/article/details/53122387
+大纲
+
+[慕课网学习笔记](https://blog.csdn.net/bobo89455100/article/category/6604866/2?orderby=UpdateTime)
+
+[面试复习——Android工程师之Android面试大纲](https://blog.csdn.net/qq_30379689/article/details/73698192)
