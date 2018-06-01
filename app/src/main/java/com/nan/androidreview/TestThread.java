@@ -12,7 +12,6 @@ public class TestThread {
 
     public static void main(String[] args) {
 
-        ThreadPoolExecutor pool = new ThreadPoolExecutor();
 
         MyRunnable myRunnable = new MyRunnable("run 1");
 
