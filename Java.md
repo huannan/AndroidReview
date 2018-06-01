@@ -138,7 +138,7 @@ public class TCPClient {
 
 [Java NIO原理图文分析及代码实现](http://weixiaolu.iteye.com/blog/1479656)
 
-### 多线程
+### 多线程基础
 
 #### 1. Java中实现多线程的两种方式
 
@@ -235,3 +235,55 @@ wait是定义在我们object大类当中，需要在同步代码块中来调用�
 [关于volatile和synchronized](https://blog.csdn.net/majorboy/article/details/475811)
 
 [Java中Synchronized的用法](https://blog.csdn.net/luoweifu/article/details/46613015)
+
+### 线程池
+
+#### 1. 线程池的好处
+
+1. 降低资源的消耗，因为可以重复利用我们已经创建好的线程，降低不断创建和销毁线程所带来的资源消耗。
+2. 提高响应速度，当任务达到一定的数量时，任务不需要等到线程创建就立即执行（因为有创建好的可以循环利用）。
+3. 提高线程的可管理性，毕竟线程还是比较稀缺的资源，尤其是手机当中，如果你无限制的创建线程，不仅仅会消耗系统资源，同时还会降低系统的稳定性，使用线程池可以进行统一的分配，可以合理的的利用线程池，也提高了线程池的管理性。
+
+#### 2. 线程池的参数
+
+```java
+public ThreadPoolExecutor(int corePoolSize,
+                          int maximumPoolSize,
+                          long keepAliveTime,
+                          TimeUnit unit,
+                          BlockingQueue<Runnable> workQueue,
+                          ThreadFactory threadFactory,
+                          RejectedExecutionHandler handler) {
+
+}
+```
+
+传递参数讲解：
+
+* corePoolSize：线程池的大小
+* maximumPoolSize：最大线程池大小
+* keepAliveTime：线程池中超过corePoolSize数目的空闲线程最大存活时间；可以allowCoreThreadTimeOut(true)使得核心线程有效时间
+* unit：keepAliveTime时间单位
+* workQueue：阻塞任务队列
+* threadFactory：新建线程工厂
+* RejectedExecutionHandler：当提交任务数超过maximumPoolSize+workQueue之和时，任务会交给RejectedExecutionHandler来处理(保护策略)
+
+重点讲解：
+
+其中比较容易让人误解的是：corePoolSize，maximumPoolSize，workQueue之间关系。
+
+1. 当线程池小于corePoolSize时，新提交任务将创建一个新线程执行任务，即使此时线程池中存在空闲线程。 
+2. 当线程池达到corePoolSize时，新提交任务将被放入workQueue中，等待线程池中任务调度执行 
+3. 当workQueue已满，且maximumPoolSize>corePoolSize时，新提交任务会创建新线程执行任务 
+4. 当提交任务数超过maximumPoolSize时，新提交任务由RejectedExecutionHandler处理 
+5. 当线程池中超过corePoolSize线程，空闲时间达到keepAliveTime时，关闭空闲线程 
+6. 当设置allowCoreThreadTimeOut(true)时，线程池中corePoolSize线程空闲时间达到keepAliveTime也将关闭
+7. 最后调用.execute()提交任务，不过.execute()没有返回值，所以不能判断这个任务是否被线程池执行成功，这是隐患之处。
+
+#### 3. 线程池的工作流程
+
+1. 首先线程池判断，基本线程池是否已满如果线程池已满，进入下个流程。如果没有满，我们就会创建一个工作（子线程）线程来执行该任务。
+2. 如果线程池工作队列满了，如果没有满，我们就会将提交的任务存储到该工作队列中，来进行相应的策略处理；如果工作队列满了，进入下一个流程。
+3. 最后线程池判断整个线程池是否已满。如果整个线程池已经满了，就会交给我们的RejectedExecutionHandler处理，可以抛出异常也可以忽略这个问题。如果没有满就会创建一个新的工作线程。
+
+

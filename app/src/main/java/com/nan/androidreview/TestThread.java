@@ -1,5 +1,7 @@
 package com.nan.androidreview;
 
+import java.util.concurrent.ThreadPoolExecutor;
+
 public class TestThread {
 
     static int i1; int geti1() { return i1; }
@@ -9,6 +11,8 @@ public class TestThread {
     int i3; synchronized int geti3() { return i3; }
 
     public static void main(String[] args) {
+
+        ThreadPoolExecutor pool = new ThreadPoolExecutor();
 
         MyRunnable myRunnable = new MyRunnable("run 1");
 
