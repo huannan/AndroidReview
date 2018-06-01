@@ -157,3 +157,81 @@ public class TCPClient {
 
 * start方法：它是开启一个线程的方法，这个时候你不需要等待run方法体中执行完毕，你就可以继续执行其它代码。并且通过start方法后，线程变成了可运行状态，而不是执行状态，什么时候运行线程代码，这就需要操作系统自己决定。
 * run方法：不会有多线程效果，就是一般的方法调用。run方法结束了，这个线程也就结束了。
+
+#### 3. synchronized关键字
+
+基本用法
+
+线程间的同步就是使用synchronized来实现的。synchronized关键字的基本用法如下：
+
+* 锁住某个对象
+* 锁住某个类及其所有对象
+
+```java
+//修饰代码块（给对象加锁），修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象。
+synchronized (this/obj) {
+
+}
+
+//修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象。等价于synchronized (this)
+public synchronized void test() {
+
+}
+
+//修饰一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象。
+public synchronized static void test(){
+    
+}
+
+//修饰一个类，其作用的范围是synchronized后面括号括起来的部分，作用的对象是这个类的所有对象。
+synchronized(ClassName.class) {
+    
+}
+``` 
+
+synchronized原理：
+
+synchronized获取和释放都有一个监听器，如果两个线程都是用同一个监听器（即相同锁），这个监听器就可以强制在在同一时间只有一个线程处理这个代码块。
+
+#### 4. volatile关键字
+
+volatile只能在线程内存和主内存之间同步一个变量的值。与不使用volatile、使用synchronized的对比如下：
+
+```java
+//线程内存和主内存都有一份变量的值，线程不安全
+int i1; int geti1() { return i1; }
+
+//volatile类型的变量不允许线程从主内存中将变量的值拷贝到自己的存储空间。volatile类型的变量的值在所有线程同步。
+//由于线程存取或更改自己的数据拷贝有更高的效率，所以volatile类型变量在性能上有所消耗。
+volatile int i2; int geti2() { return i2; }
+
+//synchronized除了代码块同步，synchronized还能使内存同步。
+//synchronized则同步在线程内存和主内存之间的所有变量的值。
+int i3; synchronized int geti3() { return i3; }
+```
+
+#### 5. volatile和synchronized区别
+        
+* volatile只能在线程内存和主内存之间同步一个变量值，而synchronized可以再线程内存和主内存之间同步所有的值，并通过锁管理所有的变量。但是synchronized更消耗内存。
+* volatile只能使用在变量上、synchronized则可以使用在对象、类、方法上面等。
+
+#### 6. synchronized和lock区别
+        
+* 用法上：synchronized是需要在同步中加入这个控制，lock需要指定起始位置和终止位置。
+* 性能上：synchronized是脱离我们Java虚拟机执行的，lock是我们java自己写的代码，所以synchronized相比lock性能差，因为synchronized是一个重量级操作，有些耗性能。
+* 采用机制方面：synchronized采用的是cpu的悲观锁机制，也就是线程获取的是独占的锁，意味着其他线程只能依靠阻塞等线程释放锁。而我们的lock是cpu的乐观锁机制，也就是每一个不加锁，而是假设没有冲突的情况下去完成某项操作。如果有冲突、失败，他就重试直到操作成功位置。
+
+#### 7. sleep和wait区别
+
+* 在等待时wait会释放锁；而sleep一直持有锁，不会改变线程持有锁的情况。
+* Wait通常被用于线程间交互，sleep通常被用于暂停执行。
+
+#### 8. wait和notify机制区别
+        
+wait是定义在我们object大类当中，需要在同步代码块中来调用，调用完之后他会释放锁，并进入锁对象的等待中，他需要其他线程调用notify这个方法释放锁之后，他才能重新去竞争锁。
+
+#### 参考文章
+
+[关于volatile和synchronized](https://blog.csdn.net/majorboy/article/details/475811)
+
+[Java中Synchronized的用法](https://blog.csdn.net/luoweifu/article/details/46613015)
