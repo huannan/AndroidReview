@@ -18,13 +18,21 @@ public class TestThread {
         Thread thread = new Thread(myRunnable);
         thread.start();
 
+        Error e;
+        OutOfMemoryError error;
     }
 
     public synchronized void test1() {
 
     }
 
-    public void test2() {
+    public final  void test2() {
+        synchronized (this) {
+
+        }
+    }
+
+    public final  void test2(int i) {
         synchronized (this) {
 
         }

@@ -287,3 +287,141 @@ public ThreadPoolExecutor(int corePoolSize,
 3. 最后线程池判断整个线程池是否已满。如果整个线程池已经满了，就会交给我们的RejectedExecutionHandler处理，可以抛出异常也可以忽略这个问题。如果没有满就会创建一个新的工作线程。
 
 
+### Android异常体系
+
+#### 1. Android异常体系
+
+![Android异常体系](https://upload-images.jianshu.io/upload_images/2570030-448912ef324750c3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+* Android中的异常体系包括Java的异常体系、Native的异常体系。
+* Throwable类是所有Java异常和错误的父类，有两个子类Error（错误）和Exception（异常）。
+* Error是程序无法处理的错误，虚拟机一般会选择线程终止。这种错误无法恢复或不可能捕获，将导致应用程序中断，通常应用程序无法处理这些错误，因此应用程序不应该捕获Error对象，也无须在其throws子句中声明该方法抛出任何Error或其子类。
+* Exception是程序本身可以处理的异常，这种异常分两大类运行时异常和非运行时异常。程序中应当尽可能去处理这些异常。
+* 运行时异常都是RuntimeException类及其子类异常，这些异常是编译器不检查的异常，程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的，程序应该从逻辑角度尽可能避免这类异常的发生。 
+* 非运行时异常是RuntimeException以外的异常，类型上都属于Exception类及其子类。从程序语法角度讲是必须进行处理的异常，如果不处理，程序就不能编译通过。 
+
+#### 2. 列举常见的异常
+
+* 常见的Error：StackOverflowError、OutOfMemoryError、ThreadDeath、ClassFormatError、AbstractMethodError、AssertionError
+* 常见的RuntimeException：NullPointerException、ClassCastException、IllegalArgumentException、ArithmeticException、IndexOutOfBoundsException、SecurityException、NumberFormatException
+* 常见的非RuntimeException：IOException、FileNotFoundException、、一般用户自定义的异常
+
+#### 3. 异常处理机制关键字的运用
+
+异常处理机制的运用：
+
+* try···catch语句
+* finally语句：任何情况下都必须执行的代码，保持程序的健壮性
+* throws子句：声明可能会出现的异常
+* throw语句：抛出异常
+
+throw与throws关键字的区别
+
+* throw关键字是用于方法体内部，用来抛出一个Throwable类型的异常，需要调用者进行捕获处理。
+* throws关键字用于方法体外部的方法声明部分，用来声明方法可能会抛出某些异常，表示本方法无法处理本异常。
+
+final、finally和finalize关键字的区别
+
+* final修饰符（关键字）
+    
+    * 被final修饰的类，就意味着不能再派生出新的子类，不能作为父类而被子类继承。因此一个类不能既被abstract声明，又被final声明。
+    * 将变量或方法声明为final，可以保证他们在使用的过程中不被修改。被声明为final的变量必须在声明时给出变量的初始值，而在以后的引用中只能读取。被final声明的方法也同样只能使用，不能被覆写。
+    
+* finally是在异常处理时提供finally块来执行任何清除操作。不管有没有异常被抛出、捕获，finally块都会被执行，保持了程序的健壮性。
+* finalize是Object类中的方法。Java技术允许使用finalize方法在垃圾收集器将对象从内存中清除出去之前做必要的清理工作。这个方法是由垃圾收集器在确定这个对象没有被引用时，被垃圾收集器清楚之前对这个对象调用的。
+
+#### 4. 异常处理机制的原理：
+
+* Java虚拟机用方法调用栈（method invocation stack）来跟踪每个线程中一系列的方法调用过程。该堆栈保存了每个调用方法的本地信息（比如方法的局部变量）。
+* 每个线程都有一个独立的方法调用栈。对于Java应用程序的主线程，堆栈底部是程序的入口方法main()。
+* 当一个新方法被调用时，Java虚拟机把描述该方法的栈结构置入栈顶，位于栈顶的方法为正在执行的方法。
+* 当一个方法正常执行完毕，Java虚拟机会从调用栈中弹出该方法的栈结构，然后继续处理前一个方法。
+* 如果在执行方法的过程中抛出异常，则Java虚拟机必须找到能捕获该异常的catch代码块。它首先查看当前方法是否存在这样的catch代码块，如果存在，那么就执行该catch代码块；否则，Java虚拟机会从调用栈中弹出该方法的栈结构，继续到前一个方法中查找合适的catch代码块。在回溯过程中，如果Java虚拟机在某个方法中找到了处理该异常的代码块，则该方法的栈结构将成为栈顶元素，程序流程将转到该方法的异常处理代码部分继续执行。
+* 当Java虚拟机追溯到调用栈的底部的方法时，如果仍然没有找到处理该异常的代码块，按以下步骤处理：
+
+    1. 调用异常对象的printStackTrace()方法，打印来自方法调用栈的异常信息。
+    2. 如果该线程不是主线程，那么终止这个线程，其他线程继续正常运行。如果该线程是主线程（即方法调用栈的底部为main()方法），那么整个应用程序被终2。
+
+#### 5. 特殊的异常处理流程
+
+在finally执行之前如果退出了程序，finally语句块不被执行：
+
+```java
+public static void test1() {
+    try {
+        //System.exit(0);
+        int i = 1/0;
+    } catch (Exception e) {
+        System.exit(0);
+    }finally {
+        System.out.println("finally");//不被打印
+    }
+}
+```
+
+* try中通过return语句返回，先执行return语句的表达式计算结果，然后执行finally语句块，最后才返回。
+* return语句已经将表达式计算完成并且将结果赋值给了一个不知名的临时变量，finally语句块中即使改变了return中相关表达式的值，但是对最终的返回结果没有任何影响。
+
+```java
+public static int test2() {
+    int a = 0;
+    try {
+        return a = 1;
+    } catch (Exception e) {
+
+    }finally {
+        a = 2;
+        System.out.println("finally");//return表达式计算之后，结果返回之前，这里被打印
+    }
+    return 0;
+}
+//程序最终返回1
+```
+
+建议不要在finally代码块中使用return语句，以为它会导致以下两种潜在的严重错误。
+
+```java
+//第一种错误是覆盖try或catch代码块的return语句。造成程序的不安全。
+public static int test3() {
+    int a = 0;
+    try {
+        return a = 1;
+    } catch (Exception e) {
+
+    }finally {
+        a = 2;
+        System.out.println("finally");
+        return a;
+    }
+}
+//程序返回2
+
+//第二中错误是丢失异常。如果catch代码块中有throw语句抛出异常，由于先执行了finally代码块，又因为finally代码块中有return语句，所以方法退栈，catch代码块中的异常就没有被捕获处理。
+public static void test4() {
+    try {
+        int a = 1/0;
+    } catch (Exception e) {
+        System.out.println("catch");
+        int b = 1 / 0;
+    }finally {
+        System.out.println("finally");
+        return;
+    }
+}
+```
+
+#### Android平台的崩溃捕获机制及实现
+
+#### 参考文章
+
+[java学习笔记《面向对象编程》——异常处理](https://blog.csdn.net/dnxyhwx/article/details/6975087)
+
+[开发中的异常和错误总结](https://blog.csdn.net/zhouxingxing1992/article/details/70236540)
+
+[Java中final、finally和finalize的区别](https://blog.csdn.net/cyl101816/article/details/67640843)
+
+[Android平台的崩溃捕获机制及实现](https://blog.csdn.net/tangxiaoyin/article/details/80121547)
+
+[]()
+
+
