@@ -447,3 +447,71 @@ final、finally和finalize关键字的区别？
 [finally代码块不被执行的情况总结](https://www.cnblogs.com/fudashi/p/6498205.html)
 
 [Android平台的崩溃捕获机制及实现](https://blog.csdn.net/tangxiaoyin/article/details/80121547)
+
+### 注解
+
+#### 1. 注解相关的基本概念
+
+什么是注解？
+
+* 概念：注解就是Java提供了一种元程序中的元素关系任何信息和任何元数据(metadata)的途径和方法。注解是一个接口，程序可以通过反射来获取指定程序元素的Annotation对象，然后通过Annotation对象来获取注解里面的元数据。
+* 基本作用：注解是JDK5.0及以后版本引入的。它可以用于创建文档，跟踪代码中的依赖性，甚至执行基本编译时检查等。
+* 基本原则：Annotation不能影响程序代码的执行，无论增加、删除Annotation，代码都始终如一的执行。另外，尽管一些annotation通过java的反射api方法在运行时被访问，而java语言解释器在工作时忽略了这些annotation。
+
+什么是metadata(元数据)？
+
+* 元数据是描述数据的数据，以标签的形式存在于Java代码中。
+* 通过元数据可以编写文档、代码分析、编译检查
+* 元数据描述的信息是类型安全的，即元数据内部的字段都是有明确类型的。
+* 元数据需要编译器之外的工具额外的处理来生成其它的程序部件。
+* 元数据可以只存在于Java源代码级别，也可以存在于编译之后的Class文件内部。
+
+注解如何被处理？
+
+* 通过注解处理器来获取和处理注解
+* 通过反射来获取和处理注解
+
+#### 2. 注解的分类
+
+根据注解使用方法和用途，我们可以将Annotation分为三类：
+
+* JDK内置系统注解
+
+    * @Override：用于修饰此方法覆盖了父类的方法
+    * @Deprecated：用于修饰已经过时的方法
+    * @SuppressWarnings:用于通知Java编译器禁止特定的编译警告
+    
+* 元注解
+
+    * @Target：用于描述注解的使用范围。Annotation可被用于packages、types（类、接口、枚举、Annotation类型）、类型成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch参数）。
+    * @Retention：表示需要在什么级别保存该注释信息，用于描述注解的生命周期（即：被描述的注解在什么范围内有效）。取值如下：
+    
+        * SOURCE：在源文件中有效，仅出现在源代码中，而被编译器丢弃
+        * CLASS：在class文件中有效，可能会被虚拟机忽略
+        * RUNTIME：在运行时有效，class被装载时将被读取（请注意并不影响class的执行，因为Annotation与class在使用上是被分离的）
+    
+    * @Documented：用于描述其它类型的Annotation应该被作为被标注的程序成员的公共API，因此可以被例如javadoc此类的工具文档化。
+    * @Inherited：元注解是一个标记注解，@Inherited阐述了某个被标注的类型是被继承的。
+
+* 自定义注解
+
+#### 3. Android Support Annotation
+
+* 空类型安全注解：@Nullable、@NonNull
+* 资源类型注解：主要用于标记某个整型参数是某某资源的ID
+* 类型定义注解：@IntDef，主要用于取代枚举，保证了调用函数的时候必须传入指定参数，若是非法在编译时就会报异常。=
+* 线程注解：@MainThread（@UiThread）、@WorkerThread、@BinderThread
+* 值范围注解：当函数参数的取值在一定范围时，可以使用注解来防止调用者传入错误的参数
+* 权限注解：为了在编译时及时发现权限的缺失，可以使用@RequiresPermission注解。
+* 重写函数注解：如果API允许重写某个函数的时候，可以加注解@CallSuper来提示开发者若是重写不调用super就会报错。
+* 混淆注解：@keep是用来标记在Proguard混淆过程中不需要混淆的类或者方法。
+
+#### 4. 参考文章
+
+[深入理解Java：注解（Annotation）基本概念](http://www.cnblogs.com/peida/archive/2013/04/23/3036035.html)
+
+[深入理解Java：注解（Annotation）自定义注解入门](http://www.cnblogs.com/peida/archive/2013/04/24/3036689.html)
+
+[深入理解Java：注解（Annotation）--注解处理器](http://www.cnblogs.com/peida/archive/2013/04/26/3038503.html)
+
+[Android进阶系列之Support Annotation Library使用详解](https://blog.csdn.net/sw5131899/article/details/53842362)
