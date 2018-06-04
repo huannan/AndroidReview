@@ -518,11 +518,66 @@ final、finally和finalize关键字的区别？
 
 ### 类加载器
 
-#### 类加载器是什么？
+#### 1. 类加载器是什么？
 
-#### 类加载器的分类
+Java程序并不是一个原生的可执行文件，而是由许多独立的class文件组成，每一个class文件对应一个Java类。这些类文件并非立即全部装入内存的，而是根据程序需要**动态**装入内存。
 
-#### 双亲委托机制
+**类加载器是用来动态加载class文件到内存当中的。**
 
-#### 类加载过程
+#### 2. Java原生类加载器的分类
 
+![Java类加载器](https://upload-images.jianshu.io/upload_images/2570030-d34d3823bdd2b3c2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+从上图我们就可以看出类加载器之间的父子关系**(注意不是类的继承关系)**和管辖范围。
+
+* BootStrap ClassLoader是最顶层的类加载器，站在虚拟机的角度来说属于启动类加载器，它是由C++编写而成,并且已经内嵌到JVM中了，主要用来读取Java的核心类库JRE/lib/rt.jar
+* Extension ClassLoader是是用来读取Java的扩展类库，读取JRE/lib/ext/*.jar
+* App ClassLoader是用来读取CLASSPATH指定的所有jar包或目录的类文件
+* Custom ClassLoader是用户自定义编写的，可以自己增加一些例如字节码加密解密等功能，它用来读取指定类文件
+
+#### 3. Android类加载器的分类
+
+![Android类加载器](https://upload-images.jianshu.io/upload_images/2570030-355155ea4054628b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+Android中的ClassLoader的整体架构**继承关系**如上图所示。
+
+* BootClassLoader：与Java中的Bootstrap ClassLoader类似，主要加载Android Framework中的字节码文件。
+* BaseDexClassLoader是PathClassLoader以及DexClassLoader的父类，PathClassLoader以及DexClassLoader的逻辑都在这个父类中实现。
+* PathClassLoader：与Java中的App ClassLoader类似，主要加载已经安装到系统中的APK中的字节码文件。
+* DexClassLoader：与Java中的Customer ClassLoader类似，主要加载自定义路径下的APK或者JAR中的字节码文件（Android中主要是指dex文件，即classes.dex）。通过DexClassLoader可以实现插件化。
+
+Android与Java原生Java类加载器最大的不同是什么？
+
+* Java原生类加载器是加载class文件
+* Android类加载器是加载dex文件
+
+#### 4. 双亲委托机制
+
+ClassLoader的主要特性是双亲委托机制：
+
+1. 即加载一个类的时候，先判断已经存在的类是否被加载过，如果没有，先去委托父亲、祖宗类加载器去加载。
+2. 如果连父亲、祖宗所有类加载器都没有加载到该类的话，那么最终由自己加载。
+3. 最终如果这个类都没有合适的CLassLoader加载，那么就会抛出ClassNotFoundException异常。
+
+双亲委托机制的优点：
+
+* 实现类加载的共享功能，提升类加载的效率。
+* 实现类加载的隔离功能，提升系统的安全性。比如，通过这种方式，系统的String类只能由系统的ClassLoader加载。
+
+#### 5. 类加载过程
+
+![类加载过程](https://upload-images.jianshu.io/upload_images/2570030-4a5ecc15b5c2e506.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+1. 加载：虚拟机外部的二进制字节流就按照虚拟机所需的格式存储在方法区之中，而且在Java堆中也创建一个java.lang.Class类的对象，这样便可以通过该对象访问方法区中的这些数据。
+2. 验证：为了确保Class文件中的字节流包含的信息符合当前虚拟机的要求，而且不会危害虚拟机自身的安全。不同的虚拟机对类验证的实现可能会有所不同，但大致都会完成以下四个阶段的验证：文件格式的验证、元数据的验证、字节码验证和符号引用验证。
+3. 准备：正式为类变量分配内存并设置类变量初始值的阶段，这些内存都将在方法区中分配。
+4. 解析：虚拟机将常量池中的符号引用替换为直接引用的过程。
+5. 初始化：执行类构造器<clinit>()方法的过程。
+
+#### 6. 参考文章
+
+[类加载](https://www.jianshu.com/p/37cad7a901b1)
+
+[JVM 类加载机制详解](http://www.importnew.com/25295.html)
+
+[【深入Java虚拟机】之四：类加载机制](https://blog.csdn.net/ns_code/article/details/17881581)
