@@ -293,7 +293,7 @@ public ThreadPoolExecutor(int corePoolSize,
 
 ![Android异常体系](https://upload-images.jianshu.io/upload_images/2570030-448912ef324750c3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-* Android中的异常体系包括Java的异常体系、Native的异常体系。
+* 常见的Android崩溃有两类，一类是Java Exception异常，一类是Native Signal异常。我们将围绕这两类异常进行。对于很多基于Unity、Cocos平台的游戏，还会有C#、JavaScript、Lua等的异常，这里不做讨论。
 * Throwable类是所有Java异常和错误的父类，有两个子类Error（错误）和Exception（异常）。
 * Error是程序无法处理的错误，虚拟机一般会选择线程终止。这种错误无法恢复或不可能捕获，将导致应用程序中断，通常应用程序无法处理这些错误，因此应用程序不应该捕获Error对象，也无须在其throws子句中声明该方法抛出任何Error或其子类。
 * Exception是程序本身可以处理的异常，这种异常分两大类运行时异常和非运行时异常。程序中应当尽可能去处理这些异常。
@@ -315,12 +315,12 @@ public ThreadPoolExecutor(int corePoolSize,
 * throws子句：声明可能会出现的异常
 * throw语句：抛出异常
 
-throw与throws关键字的区别
+throw与throws关键字的区别？
 
 * throw关键字是用于方法体内部，用来抛出一个Throwable类型的异常，需要调用者进行捕获处理。
 * throws关键字用于方法体外部的方法声明部分，用来声明方法可能会抛出某些异常，表示本方法无法处理本异常。
 
-final、finally和finalize关键字的区别
+final、finally和finalize关键字的区别？
 
 * final修饰符（关键字）
     
@@ -344,73 +344,97 @@ final、finally和finalize关键字的区别
 
 #### 5. 特殊的异常处理流程
 
-在finally执行之前如果退出了程序，finally语句块不被执行：
+* finally语句块不被执行的特殊情况：
 
-```java
-public static void test1() {
-    try {
-        //System.exit(0);
-        int i = 1/0;
-    } catch (Exception e) {
-        System.exit(0);
-    }finally {
-        System.out.println("finally");//不被打印
+    * try语句之前就已经返回了
+    * 在finally执行之前如果通过System.exit退出了程序，finally语句块不被执行：
+    
+        ```java
+        public static void test1() {
+            try {
+                //System.exit(0);
+                int i = 1/0;
+            } catch (Exception e) {
+                System.exit(0);
+            }finally {
+                System.out.println("finally");//不被打印
+            }
+        }
+        ```
+        
+    * 当所有的非守护线程中止时，守护线程被kill掉，守护线程中未被执行的finally代码块是不会执行的。
+
+* try中有return，finally会被执行：try中通过return语句返回，先执行return语句的表达式计算结果，然后执行finally语句块，最后才返回。
+* finally不能通过变量赋值的方式改变返回结果：return语句已经将表达式计算完成并且将结果赋值给了一个不知名的临时变量，finally语句块中即使改变了return中相关表达式的值，但是没有通过return改变临时返回变量的值，但是对最终的返回结果没有任何影响。
+
+    ```java
+    public static int test2() {
+        int a = 0;
+        try {
+            return a = 1;
+        } catch (Exception e) {
+        }finally {
+            a = 2;
+            System.out.println("finally");//return表达式计算之后，结果返回之前，这里被打印
+        }
+        return 0;
     }
-}
-```
+    //程序最终返回1
+    ```
 
-* try中通过return语句返回，先执行return语句的表达式计算结果，然后执行finally语句块，最后才返回。
-* return语句已经将表达式计算完成并且将结果赋值给了一个不知名的临时变量，finally语句块中即使改变了return中相关表达式的值，但是对最终的返回结果没有任何影响。
+* 建议不要在finally代码块中使用return语句，以为它会导致以下两种潜在的严重错误。
 
-```java
-public static int test2() {
-    int a = 0;
-    try {
-        return a = 1;
-    } catch (Exception e) {
+    * finally中的return会覆盖try或catch代码块的return语句，造成程序的不安全。
+    
+        ```java
+        public static int test3() {
+            int a = 0;
+            try {
+                return a = 1;
+            } catch (Exception e) {
+            }finally {
+                a = 2;
+                System.out.println("finally");
+                return a;
+            }
+        }
+        //程序返回2
+        ```
+    
+    * 丢失异常：如果catch代码块中有throw语句抛出异常，由于先执行了finally代码块，又因为finally代码块中有return语句，所以方法退栈，catch代码块中的异常就没有被捕获处理。
+    
+        ```java
+        public static void test4() {
+            try {
+                int a = 1/0;
+            } catch (Exception e) {
+                System.out.println("catch");
+                int b = 1 / 0;
+            }finally {
+                System.out.println("finally");
+                return;
+            }
+        }
+        ```
 
-    }finally {
-        a = 2;
-        System.out.println("finally");//return表达式计算之后，结果返回之前，这里被打印
-    }
-    return 0;
-}
-//程序最终返回1
-```
+#### 6. Android平台的崩溃捕获机制及实现
 
-建议不要在finally代码块中使用return语句，以为它会导致以下两种潜在的严重错误。
+使用UncaughtExceptionHandler捕获Uncaught异常：
 
-```java
-//第一种错误是覆盖try或catch代码块的return语句。造成程序的不安全。
-public static int test3() {
-    int a = 0;
-    try {
-        return a = 1;
-    } catch (Exception e) {
+* 没有捕获住的异常，即Uncaught异常，都会导致应用程序崩溃。那么面对崩溃，我们是否可以做些什么呢？比如程序退出前，弹出个性化对话框，而不是默认的强制关闭对话框，或者弹出一个提示框安慰一下用户，甚至重启应用程序等。其实Java提供了一个接口给我们，可以完成这些，这就是UncaughtExceptionHandler。
 
-    }finally {
-        a = 2;
-        System.out.println("finally");
-        return a;
-    }
-}
-//程序返回2
+    ```java
+    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            //...
+        }
+    });
+    ```
 
-//第二中错误是丢失异常。如果catch代码块中有throw语句抛出异常，由于先执行了finally代码块，又因为finally代码块中有return语句，所以方法退栈，catch代码块中的异常就没有被捕获处理。
-public static void test4() {
-    try {
-        int a = 1/0;
-    } catch (Exception e) {
-        System.out.println("catch");
-        int b = 1 / 0;
-    }finally {
-        System.out.println("finally");
-        return;
-    }
-}
-```
+对Native代码的崩溃，可以通过调用sigaction()注册信号处理函数来完成捕获：
 
-#### Android平台的崩溃捕获机制及实现
+* 熟悉Linux开发的人都知道，so库一般通过gcc/g++编译，崩溃时会产生信号异常。Android底层是Linux系统，所以so库崩溃时也会产生信号异常。通过调用sigaction()注册信号处理函数可以捕获Android Native崩溃。
 
 #### 参考文章
 
@@ -420,8 +444,6 @@ public static void test4() {
 
 [Java中final、finally和finalize的区别](https://blog.csdn.net/cyl101816/article/details/67640843)
 
+[finally代码块不被执行的情况总结](https://www.cnblogs.com/fudashi/p/6498205.html)
+
 [Android平台的崩溃捕获机制及实现](https://blog.csdn.net/tangxiaoyin/article/details/80121547)
-
-[]()
-
-
