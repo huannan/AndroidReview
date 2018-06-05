@@ -528,7 +528,7 @@ Java程序并不是一个原生的可执行文件，而是由许多独立的clas
 
 ![Java类加载器](https://upload-images.jianshu.io/upload_images/2570030-d34d3823bdd2b3c2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-从上图我们就可以看出类加载器之间的父子关系**(注意不是类的继承关系)**和管辖范围。
+从上图我们就可以看出类加载器之间的父子关系__(注意不是类的继承关系)__和管辖范围。
 
 * BootStrap ClassLoader是最顶层的类加载器，站在虚拟机的角度来说属于启动类加载器，它是由C++编写而成,并且已经内嵌到JVM中了，主要用来读取Java的核心类库JRE/lib/rt.jar
 * Extension ClassLoader是是用来读取Java的扩展类库，读取JRE/lib/ext/*.jar
@@ -539,7 +539,7 @@ Java程序并不是一个原生的可执行文件，而是由许多独立的clas
 
 ![Android类加载器](https://upload-images.jianshu.io/upload_images/2570030-355155ea4054628b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-Android中的ClassLoader的整体架构**继承关系**如上图所示。
+Android中的ClassLoader的整体架构__继承关系__如上图所示。
 
 * BootClassLoader：与Java中的Bootstrap ClassLoader类似，主要加载Android Framework中的字节码文件。
 * BaseDexClassLoader是PathClassLoader以及DexClassLoader的父类，PathClassLoader以及DexClassLoader的逻辑都在这个父类中实现。
