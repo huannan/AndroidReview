@@ -528,7 +528,7 @@ Java程序并不是一个原生的可执行文件，而是由许多独立的clas
 
 ![Java类加载器](https://upload-images.jianshu.io/upload_images/2570030-d34d3823bdd2b3c2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-从上图我们就可以看出类加载器之间的父子关系__(注意不是类的继承关系)__和管辖范围。
+从上图我们就可以看出类加载器之间的父子关系(**注意不是类的继承关系**)和管辖范围。
 
 * BootStrap ClassLoader是最顶层的类加载器，站在虚拟机的角度来说属于启动类加载器，它是由C++编写而成,并且已经内嵌到JVM中了，主要用来读取Java的核心类库JRE/lib/rt.jar
 * Extension ClassLoader是是用来读取Java的扩展类库，读取JRE/lib/ext/*.jar
@@ -539,7 +539,7 @@ Java程序并不是一个原生的可执行文件，而是由许多独立的clas
 
 ![Android类加载器](https://upload-images.jianshu.io/upload_images/2570030-355155ea4054628b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-Android中的ClassLoader的整体架构__继承关系__如上图所示。
+Android中的ClassLoader的整体架构**继承关系**如上图所示。
 
 * BootClassLoader：与Java中的Bootstrap ClassLoader类似，主要加载Android Framework中的字节码文件。
 * BaseDexClassLoader是PathClassLoader以及DexClassLoader的父类，PathClassLoader以及DexClassLoader的逻辑都在这个父类中实现。
@@ -581,3 +581,45 @@ ClassLoader的主要特性是双亲委托机制：
 [JVM 类加载机制详解](http://www.importnew.com/25295.html)
 
 [【深入Java虚拟机】之四：类加载机制](https://blog.csdn.net/ns_code/article/details/17881581)
+
+### Java的内存分配
+
+#### 1. Java内存划分
+
+* 静态存储区（方法区）：主要存放**静态数据、全局静态数据和常量**。这块内存在程序编译时就已经分配好，并且在**程序整个运行期间都存在**。
+* 栈区：当方法被执行时，**方法体内的局部变量，其中包括基础数据类型、对象的引用**都在栈上创建，并在方法执行结束时这些局部变量所持有的内存将会自动被释放。因为栈内存分配运算内置于处理器的指令集中，**效率很高，但是分配的内存容量有限**。
+* 堆区：又称动态内存分配，通常就是指在**程序运行时直接new出来的内存**，也就是对象的实例。这部分内存在不使用时将会**由Java垃圾回收器来负责回收**。
+
+#### 2. 堆区和栈区的区别
+
+* 局部变量的基本数据类型和引用存储于栈中。因为它们属于方法中的变量，生命周期随方法而结束。
+* 当在一段方法块中定义一个变量时，Java就会在栈中为该变量分配内存空间，当超过该变量的作用域后，分配给它的内存空间也将被释放掉。
+* 成员变量全部存储于堆中（包括基本数据类型，引用和引用的对象实体）。因为它们属于类，类对象终究是要被new出来使用的。
+* 在堆中分配的内存，将由Java垃圾回收器来自动管理。在堆中产生了一个数组或者对象后，还可以在栈中定义一个特殊的变量，这个变量的取值等于数组或者对象在堆内存中的首地址，这个特殊变量就是引用变量。可以通过引用变量来访问堆中的对象或者数组。
+
+#### 3. 面试常见例题
+
+```java
+public class Sample {
+
+    //因为类被new出来之后是存放在堆中的，所有成员变量全部存储于堆中（包括基本数据类型，引用和引用的对象实体）
+    int i1 = 0;
+    Sample s1 = new Sample();
+
+    public void method() {
+        //局部变量和引用变量都是存在于栈中，但引用变量指向的对象是存在于堆中
+        int i2 = 1;
+        Sample s2 = new Sample();
+    }
+
+    public static void main(String[] args) {
+        //局部变量和引用变量都是存在于栈中，但引用变量指向的对象是存在于堆中
+        Sample s3 = new Sample();
+    }
+
+}
+```
+
+#### 4. 参考文章
+
+[内存泄漏与内存溢出总结](https://blog.csdn.net/u012792686/article/details/69666498)
