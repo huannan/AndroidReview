@@ -464,11 +464,6 @@ final、finally和finalize关键字的区别？
 * 元数据需要编译器之外的工具额外的处理来生成其它的程序部件。
 * 元数据可以只存在于Java源代码级别，也可以存在于编译之后的Class文件内部。
 
-注解如何被处理？
-
-* 通过注解处理器来获取和处理注解
-* 通过反射来获取和处理注解
-
 #### 2. 注解的分类
 
 根据注解使用方法和用途，我们可以将Annotation分为三类：
@@ -489,11 +484,23 @@ final、finally和finalize关键字的区别？
         * RUNTIME：在运行时有效，class被装载时将被读取（请注意并不影响class的执行，因为Annotation与class在使用上是被分离的）
     
     * @Documented：用于描述其它类型的Annotation应该被作为被标注的程序成员的公共API，因此可以被例如javadoc此类的工具文档化。
-    * @Inherited：元注解是一个标记注解，@Inherited阐述了某个被标注的类型是被继承的。
+    * @Inherited：元注解是一个标记注解，@Inherited阐述了某个被标注的类型是被继承的（注解可以传递到子类）。
 
 * 自定义注解
 
-#### 3. Android Support Annotation
+#### 3. 注解处理器
+
+注解如何被处理？
+
+* 通过注解处理器来获取和处理注解（核心原理是反射机制）
+* 先通过反射API获取class的元素（域、方法等），然后通过反射API中与注解相关的4个核心API来获取、处理注解：
+
+    * boolean is AnnotationPresent(Class<?extends Annotation> annotationClass):判断该程序元素上是否包含指定类型的注解，存在则返回true，否则返回false.
+    * <T extends Annotation> T getAnnotation(Class<T> annotationClass): 返回改程序元素上存在的、指定类型的注解，如果该类型注解不存在，则返回null。
+    * Annotation[] getAnnotations():返回该程序元素上存在的所有注解。
+    * Annotation[] getDeclaredAnnotations()：返回直接存在于此元素上的所有注解。与此接口中的其他方法不同，该方法将忽略继承的注解（@Inherited）。
+
+#### 4. Android Support Annotation
 
 * 空类型安全注解：@Nullable、@NonNull
 * 资源类型注解：主要用于标记某个整型参数是某某资源的ID
@@ -504,7 +511,7 @@ final、finally和finalize关键字的区别？
 * 重写函数注解：如果API允许重写某个函数的时候，可以加注解@CallSuper来提示开发者若是重写不调用super就会报错。
 * 混淆注解：@keep是用来标记在Proguard混淆过程中不需要混淆的类或者方法。
 
-#### 4. 参考文章
+#### 5. 参考文章
 
 [深入理解Java：注解（Annotation）基本概念](http://www.cnblogs.com/peida/archive/2013/04/23/3036035.html)
 
