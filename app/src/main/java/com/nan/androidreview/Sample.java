@@ -3,6 +3,9 @@ package com.nan.androidreview;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Sample {
 
@@ -32,6 +35,7 @@ public class Sample {
         //局部变量和引用变量都是存在于栈中，但引用变量指向的对象是存在于堆中
         Sample s3 = new Sample();
     }
+
 
 }
 
