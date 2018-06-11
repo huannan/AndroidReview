@@ -12,9 +12,9 @@ public class TestType<T> {
         List<String> list = new ArrayList<>();
         list.getClass().getMethod("add", Object.class).invoke(list, "abc");
 
-        List<Object> l1 = new ArrayList<String>();
-        List l2 = new ArrayList();
-        l2 = l1;
+//        List<Object> l1 = new ArrayList<String>();
+//        List l2 = new ArrayList();
+//        l2 = l1;
 
     }
 
