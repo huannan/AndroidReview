@@ -14,7 +14,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity">
-
         </activity>
         <activity android:name=".HandlerThreadActivity">
         </activity>
@@ -22,12 +21,20 @@
         <service android:name=".TestIntentService"/>
 
         <activity android:name=".ConstraintLayoutActivity">
+
+        </activity>
+        <activity android:name=".dagger.FactoryActivity">
+
+        </activity>
+
+        <activity android:name=".dagger_moudle.HttpActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

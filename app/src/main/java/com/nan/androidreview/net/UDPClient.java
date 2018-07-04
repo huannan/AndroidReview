@@ -1,4 +1,4 @@
-package com.nan.androidreview;
+package com.nan.androidreview.net;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
