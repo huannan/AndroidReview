@@ -11,11 +11,13 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
 
-        ARouter.openLog();     // 打印日志
+        ARouter.openLog();
         if (BuildConfig.DEBUG) {
-            ARouter.openDebug();   // 开启调试模式(如果在InstantRun模式下运行，必须开启调试模式！线上版本需要关闭,否则有安全风险)
+            // 开启调试模式(如果在InstantRun模式下运行，必须开启调试模式！线上版本需要关闭,否则有安全风险)
+            ARouter.openDebug();
         }
-        ARouter.init( this ); // 尽可能早，推荐在Application中初始化
+        // 尽可能早，推荐在Application中初始化
+        ARouter.init(this);
 
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
