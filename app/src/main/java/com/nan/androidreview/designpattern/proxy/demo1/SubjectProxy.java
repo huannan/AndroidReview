@@ -10,6 +10,7 @@ public class SubjectProxy implements Subject {
 
     @Override
     public void request() {
+        //代理中可以增加一些自定义的逻辑，这是面向切面编程的雏形
         before();
         mSubject.request();
         after();
