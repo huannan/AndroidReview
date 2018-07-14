@@ -1,6 +1,9 @@
 package com.nan.androidreview.designpattern.mediator;
 
-public class Colleague {
+/**
+ * 同事类
+ */
+public abstract class Colleague {
 
     protected Mediator mMediator;
 
