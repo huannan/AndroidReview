@@ -3,16 +3,16 @@ package com.nan.androidreview.designpattern.interpreter_demo;
 import java.util.HashMap;
 
 /**
- * 加法
+ * 减法
  */
-public class AddExpression extends SymbolExpression {
+public class SubExpression extends SymbolExpression {
 
-    public AddExpression(Expression left, Expression right) {
+    public SubExpression(Expression left, Expression right) {
         super(left, right);
     }
 
     @Override
     public int interpreter(HashMap<String, Integer> var) {
-        return this.mLeft.interpreter(var) + this.mRight.interpreter(var);
+        return this.mLeft.interpreter(var) - this.mRight.interpreter(var);
     }
 }
