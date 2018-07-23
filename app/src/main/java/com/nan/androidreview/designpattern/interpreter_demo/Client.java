@@ -7,7 +7,7 @@ public class Client {
     public static void main(String[] args) throws Exception {
         //获取表达式
         String expStr = Calculator.getExpStr();
-        //为表达式中的元素赋值
+        //为表达式中的元素赋值，这里的HashMap充当了Context上下文角色
         HashMap<String, Integer> values = Calculator.getValues(expStr);
         //构造Calculator，解析表达式
         Calculator calculator = new Calculator(expStr);
