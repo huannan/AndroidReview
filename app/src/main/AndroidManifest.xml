@@ -21,20 +21,18 @@
         <service android:name=".TestIntentService"/>
 
         <activity android:name=".ConstraintLayoutActivity">
-
         </activity>
         <activity android:name=".dagger.FactoryActivity">
-
         </activity>
-
         <activity android:name=".dagger_moudle.HttpActivity">
+        </activity>
+        <activity android:name=".leak.LeakActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
     </application>
 
 </manifest>
