@@ -915,3 +915,42 @@ Java中非限定通配符定义的参数类型```List<?>```和参数类型```Lis
 [JAVA面试-基础加强与巩固：反射、注解、泛型等](https://www.jianshu.com/p/aaf8594e02eb)
 
 [泛型常见面试题](https://www.cnblogs.com/huajiezh/p/6411123.html)
+
+
+### JNI
+
+#### 1. JNI原理
+
+* Java层是通过```System.loadLibrary("hello")```方法加载so动态库，最终会对应一个```NativeLibrary```，其中最核心的是so库的句柄handle
+* C/C++层是通过两个核心函数```dlopen、dlsym```来进行so库的加载。虚拟机会解析C/C++的头文件、解析并且保存里面的符号表。其中，```dlopen```返回so的句柄handle，```dlsym```可以获取句柄handle中的某个方法的函数指针。
+* 最终通过函数指针调用函数的时候，也会分配函数栈等内存，然后进行调用，这里就是一般的函数调用过程了。
+* 示例代码如下
+
+```c++
+//定义hello.c
+int add(int a,int b){return a+b;}
+
+//将定义hello.c编译成共享库libhello.so
+gcc -shared hello.c -o libhello.so
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <dlfcn.h>
+//这里为了演示方便去掉错误检查相关的代码
+int main(int argc,char*argv[]){
+        void * handle;
+        int (*func)(int,int);
+        char *error;
+        int a,b;
+
+        //加载libhello.so库，并且查找到对应的函数add
+        handle = dlopen("libhello.so",RTLD_LAZY);//RTLD_LAZY表示懒加载-需要调用的时候才加载
+        func = dlsym(handle,"add");
+
+        //调用、输出结果
+        printf("%d",(*func)(1,2));
+        
+        //关闭句柄
+        dlclose(handle);
+}
+```
