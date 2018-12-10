@@ -927,31 +927,64 @@ Java中非限定通配符定义的参数类型```List<?>```和参数类型```Lis
 * 最终通过函数指针调用函数的时候，也会分配函数栈等内存，然后进行调用，这里就是一般的函数调用过程了
 * 示例代码如下：
 
-```c++
-//定义hello.c
-int add(int a,int b){return a+b;}
+    ```c++
+    //定义hello.c
+    int add(int a,int b){return a+b;}
+    
+    //将定义hello.c编译成共享库libhello.so
+    gcc -shared hello.c -o libhello.so
+    
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <dlfcn.h>
+    //这里为了演示方便去掉错误检查相关的代码
+    int main(int argc,char*argv[]){
+            void * handle;
+            int (*func)(int,int);
+            char *error;
+            int a,b;
+    
+            //加载libhello.so库，并且查找到对应的函数add
+            handle = dlopen("libhello.so",RTLD_LAZY);//RTLD_LAZY表示懒加载-需要调用的时候才加载
+            func = dlsym(handle,"add");
+    
+            //调用、输出结果
+            printf("%d",(*func)(1,2));
+            
+            //关闭句柄
+            dlclose(handle);
+    }
+    ```
+* ```NativeLibrary```与```dlopen、dlsym、dlclose```的对应如下：
 
-//将定义hello.c编译成共享库libhello.so
-gcc -shared hello.c -o libhello.so
+    ```java
+    public abstract class ClassLoader {
+        //NativeLibrary其实是ClassLoader的一个静态内部类，NativeLibrary可以看成一个Bean对应，对应着一个so动态链接库
+        static class NativeLibrary {
+            //so的文件句柄
+            long handle;
+            //so的名字
+            String name;
+            //so是否已经加载
+            boolean loaded;
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <dlfcn.h>
-//这里为了演示方便去掉错误检查相关的代码
-int main(int argc,char*argv[]){
-        void * handle;
-        int (*func)(int,int);
-        char *error;
-        int a,b;
+            /**
+             * so加载的方法
+             * 对应handle = dlopen("xxx.so",RTLD_LAZY)
+             */
+            native void load(String name, boolean isBuiltin);
 
-        //加载libhello.so库，并且查找到对应的函数add
-        handle = dlopen("libhello.so",RTLD_LAZY);//RTLD_LAZY表示懒加载-需要调用的时候才加载
-        func = dlsym(handle,"add");
+            /**
+             * JNI方法调用的时候，根据name查找so中的方法
+             * 对应func = dlsym(handle,"xxx")
+             */
+            native long find(String name);
 
-        //调用、输出结果
-        printf("%d",(*func)(1,2));
-        
-        //关闭句柄
-        dlclose(handle);
-}
-```
+            /**
+             * so卸载载的方法
+             * 对应dlclose(handle);
+             */
+            native void unload(String name, boolean isBuiltin);
+        }
+    }
+    ```
